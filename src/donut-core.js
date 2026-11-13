@@ -14,6 +14,7 @@ export const SHADOW = -2;
 
 // 256-color palettes, dim → bright (works in macOS Terminal and everything else).
 export const THEMES = [
+  { name: 'vapor', colors: [54, 55, 56, 92, 128, 164, 170, 206, 212, 218, 159, 195] },
   { name: 'pink', colors: [53, 89, 90, 125, 126, 162, 163, 199, 205, 212, 218, 225] },
   { name: 'sunset', colors: [52, 88, 124, 160, 196, 202, 208, 214, 220, 221, 228, 230] },
   { name: 'ocean', colors: [17, 18, 19, 20, 26, 32, 38, 44, 45, 51, 87, 159] },
@@ -89,40 +90,77 @@ export function render(grid, M) {
 
 // ---- motion -----------------------------------------------------------------
 
-const SPIN_A = 1.2; // radians per second at 1× speed
+const SPIN_A = 1.2; // auto-spin, radians per second at 1× speed
 const SPIN_B = 0.6;
-const FOLLOW_PHONE = 14; // how snappily the donut follows the phone (higher = tighter)
-const FOLLOW_AUTO = 4; // how gently it glides back when tilt stops
+const FOLLOW_AUTO = 4; // how gently it glides back to auto-spin when tilt stops
+
+// Tilt feel. The donut accelerates toward where the phone points, cruises at
+// a capped speed, then eases out as it arrives. It never builds up spin.
+const TILT_ACCEL = 4; // radians per second², for both easing in and easing out
+const TILT_MAX_SPEED = 1.8; // radians per second at 1× speed (the speed slider scales it)
+const SENSOR_SMOOTHING = 18; // filters sensor jitter before motion is planned
+const MIRROR_FOLLOW = 20; // how tightly the terminal tracks the phone's pose
+
+// Phone lying flat → donut seen from straight above (its hole faces you).
+const TOP_DOWN = Q.axisAngle(1, 0, 0, -Math.PI / 2);
 
 export function createPose() {
   return {
     A: 0.9, // start tipped toward you so you can see the hole
     B: 0,
-    current: Q.mul(Q.IDENTITY, Q.axisAngle(1, 0, 0, 0.9)),
-    tilt: null, // latest phone quaternion, or null when tilt is off
-    ref: null, // phone pose that counts as "neutral" (set on recenter)
+    current: Q.axisAngle(1, 0, 0, 0.9),
+    tilt: null, // where the phone points (scene space), or null when tilt is off
+    smoothTilt: null,
+    velocity: 0, // radians per second, while following tilt
   };
 }
 
-export function setTilt(pose, alpha, beta, gamma) {
-  pose.tilt = Q.fromDeviceOrientation(alpha, beta, gamma);
-  if (!pose.ref) pose.ref = pose.tilt;
+export function setTilt(pose, beta, gamma) {
+  pose.tilt = Q.phoneToScene(Q.fromTilt(beta, gamma));
 }
 
-// Advances the spin and eases toward the target. Returns a 3×3 matrix.
-// With tilt on, the phone rotates the whole spinning donut.
+export function clearTilt(pose) {
+  pose.tilt = null;
+  pose.smoothTilt = null;
+  pose.velocity = 0;
+}
+
+// Advances the donut by dt seconds. Returns a 3×3 matrix for render().
 export function stepPose(pose, dt, { speed, paused }) {
-  if (!paused) {
-    pose.A += SPIN_A * speed * dt;
-    pose.B += SPIN_B * speed * dt;
-  }
-  let target = Q.mul(Q.axisAngle(0, 0, 1, pose.B), Q.axisAngle(1, 0, 0, pose.A));
-  let follow = FOLLOW_AUTO;
   if (pose.tilt) {
-    const rel = Q.phoneToScene(Q.mul(Q.conj(pose.ref), pose.tilt));
-    target = Q.mul(rel, target);
-    follow = FOLLOW_PHONE;
+    pose.smoothTilt = pose.smoothTilt
+      ? Q.slerp(pose.smoothTilt, pose.tilt, 1 - Math.exp(-SENSOR_SMOOTHING * dt))
+      : pose.tilt;
+    moveToward(pose, Q.mul(pose.smoothTilt, TOP_DOWN), dt, TILT_MAX_SPEED * Math.max(0.25, speed));
+  } else {
+    if (!paused) {
+      pose.A += SPIN_A * speed * dt;
+      pose.B += SPIN_B * speed * dt;
+    }
+    const target = Q.mul(Q.axisAngle(0, 0, 1, pose.B), Q.axisAngle(1, 0, 0, pose.A));
+    pose.current = dt > 0 ? Q.slerp(pose.current, target, 1 - Math.exp(-FOLLOW_AUTO * dt)) : target;
   }
-  pose.current = dt > 0 ? Q.slerp(pose.current, target, 1 - Math.exp(-follow * dt)) : target;
+  return Q.toMatrix(pose.current);
+}
+
+// Trapezoidal motion: speed up at TILT_ACCEL, never exceed maxSpeed, and slow
+// down early enough to stop exactly on the target (v² = 2·a·distance).
+function moveToward(pose, target, dt, maxSpeed) {
+  const dist = Q.angleBetween(pose.current, target);
+  if (dist < 1e-4) {
+    pose.current = target;
+    pose.velocity = 0;
+    return;
+  }
+  const canStopFrom = Math.sqrt(2 * TILT_ACCEL * dist);
+  pose.velocity = Math.min(maxSpeed, canStopFrom, pose.velocity + TILT_ACCEL * dt);
+  const step = Math.min(dist, pose.velocity * dt);
+  pose.current = Q.slerp(pose.current, target, step / dist);
+}
+
+// For a screen that mirrors another device: glide to its pose, absorbing
+// network jitter. Returns a 3×3 matrix for render().
+export function followPose(pose, q, dt) {
+  pose.current = Q.slerp(pose.current, q, 1 - Math.exp(-MIRROR_FOLLOW * dt));
   return Q.toMatrix(pose.current);
 }

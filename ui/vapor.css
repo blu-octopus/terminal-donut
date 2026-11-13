@@ -1,0 +1,286 @@
+/* ============================================================================
+   vapor.css: a tiny vaporwave design system
+   Retro-OS windows, ink outlines, hard offset shadows, pastel gradients,
+   pixel type. See design-system.html for every component in one place.
+
+   Fonts (add to <head>):
+   <link href="https://fonts.googleapis.com/css2?family=Silkscreen&family=VT323&display=swap" rel="stylesheet">
+   ========================================================================== */
+
+/* ---- tokens ------------------------------------------------------------- */
+:root {
+  /* color */
+  --vw-night: #0d0221;      /* page background */
+  --vw-dusk: #241047;       /* raised background */
+  --vw-ink: #1a0933;        /* outlines + text on light fills */
+  --vw-cream: #fff4fb;      /* light fills + text on dark */
+  --vw-pink: #ff71ce;
+  --vw-hot: #ff2e88;
+  --vw-lavender: #c9b3ff;
+  --vw-periwinkle: #8a7dff;
+  --vw-blue: #3b2bff;
+  --vw-cyan: #01cdfe;
+  --vw-mint: #05ffa1;
+  --vw-sun: #ffb86b;
+
+  --vw-text: var(--vw-cream);
+  --vw-text-dim: rgba(255, 244, 251, 0.62);
+  --vw-track: #4a3a7a;      /* empty part of sliders */
+
+  /* gradients */
+  --vw-grad-title: linear-gradient(90deg, #ff8fd8 0%, #d6a8ff 50%, #8fa6ff 100%);
+  --vw-grad-fill: linear-gradient(90deg, var(--vw-sun), var(--vw-pink));
+  --vw-grad-primary: linear-gradient(180deg, #ffb3e6 0%, #c9a2ff 100%);
+  --vw-grad-sky: linear-gradient(180deg, #0d0221 0%, #261447 55%, #4a1a6b 85%, #ff71ce 130%);
+
+  /* glass */
+  --vw-glass: rgba(36, 16, 71, 0.42);
+  --vw-glass-strong: rgba(36, 16, 71, 0.62);
+  --vw-blur: blur(14px) saturate(1.5);
+
+  /* shape */
+  --vw-border: 2px solid var(--vw-ink);
+  --vw-radius: 14px;
+  --vw-radius-sm: 10px;
+  --vw-pill: 999px;
+  --vw-shadow: 4px 4px 0 var(--vw-ink);
+  --vw-shadow-sm: 3px 3px 0 var(--vw-ink);
+  --vw-glow: 0 0 18px rgba(255, 113, 206, 0.45);
+
+  /* type */
+  --vw-font-display: 'Silkscreen', ui-monospace, monospace;
+  --vw-font-body: 'VT323', ui-monospace, monospace;
+
+  /* space */
+  --vw-1: 4px;
+  --vw-2: 8px;
+  --vw-3: 12px;
+  --vw-4: 16px;
+  --vw-5: 24px;
+}
+
+/* ---- type ----------------------------------------------------------------- */
+.vw-display { font-family: var(--vw-font-display); font-size: 28px; line-height: 1.1; }
+.vw-body { font-family: var(--vw-font-body); font-size: 22px; line-height: 1.15; }
+.vw-label {
+  font-family: var(--vw-font-display);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--vw-lavender);
+}
+
+/* ---- window ----------------------------------------------------------------
+   <section class="vw-window">
+     <header class="vw-titlebar">
+       <span class="vw-titlebar__title">file.exe</span>
+       <span class="vw-titlebar__ctl"><i>_</i><i>□</i><i>×</i></span>
+     </header>
+     <div class="vw-window__body">…</div>
+   </section>
+   Add .vw-window--glass for a frosted body.                                   */
+.vw-window {
+  border: var(--vw-border);
+  border-radius: var(--vw-radius);
+  background: var(--vw-cream);
+  color: var(--vw-ink);
+  box-shadow: var(--vw-shadow);
+  overflow: hidden;
+}
+.vw-titlebar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--vw-2);
+  padding: 5px 6px 5px 10px;
+  background: var(--vw-grad-title);
+  border-bottom: var(--vw-border);
+  color: var(--vw-ink);
+}
+.vw-titlebar__title {
+  font-family: var(--vw-font-display);
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.vw-titlebar__ctl { display: flex; gap: 4px; flex: none; }
+.vw-titlebar__ctl i {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border: var(--vw-border);
+  border-radius: 4px;
+  background: var(--vw-cream);
+  font: 12px/1 var(--vw-font-display);
+  font-style: normal;
+}
+.vw-window__body { padding: var(--vw-4); }
+.vw-window--glass { background: transparent; color: var(--vw-text); }
+.vw-window--glass .vw-window__body {
+  background: var(--vw-glass);
+  backdrop-filter: var(--vw-blur);
+  -webkit-backdrop-filter: var(--vw-blur);
+}
+
+/* ---- buttons ----------------------------------------------------------------
+   .vw-btn                 cream, ink outline, hard shadow
+   .vw-btn--primary        pastel gradient
+   .vw-btn--hot            hot pink (destructive / "NO")
+   .vw-btn--glass          frosted, glowing: the big call to action
+   .vw-btn--icon           round play/pause style button                         */
+.vw-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--vw-2);
+  min-height: 40px;
+  padding: 6px 16px;
+  border: var(--vw-border);
+  border-radius: var(--vw-radius-sm);
+  background: var(--vw-cream);
+  color: var(--vw-ink);
+  box-shadow: var(--vw-shadow-sm);
+  font: 22px/1 var(--vw-font-body);
+  cursor: pointer;
+  transition: transform 0.06s, box-shadow 0.06s;
+  -webkit-tap-highlight-color: transparent;
+}
+.vw-btn:active { transform: translate(3px, 3px); box-shadow: 0 0 0 var(--vw-ink); }
+.vw-btn:focus-visible { outline: 2px dashed var(--vw-cyan); outline-offset: 3px; }
+.vw-btn:disabled { opacity: 0.4; pointer-events: none; }
+.vw-btn--primary { background: var(--vw-grad-primary); }
+.vw-btn--hot { background: var(--vw-hot); color: var(--vw-cream); }
+.vw-btn--glass {
+  border-color: rgba(255, 244, 251, 0.55);
+  background: linear-gradient(180deg, rgba(255, 143, 216, 0.28), rgba(138, 125, 255, 0.22));
+  backdrop-filter: var(--vw-blur);
+  -webkit-backdrop-filter: var(--vw-blur);
+  color: var(--vw-cream);
+  box-shadow: var(--vw-glow), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  text-shadow: 0 0 8px rgba(255, 113, 206, 0.9);
+}
+.vw-btn--glass:active { transform: scale(0.98); box-shadow: var(--vw-glow); }
+.vw-btn--glass[aria-pressed="true"] {
+  border-color: var(--vw-pink);
+  background: linear-gradient(180deg, rgba(255, 113, 206, 0.5), rgba(138, 125, 255, 0.4));
+}
+.vw-btn--icon {
+  width: 40px;
+  min-height: 40px;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 18px;
+}
+.vw-btn--block { display: flex; width: 100%; }
+
+/* ---- slider ----------------------------------------------------------------
+   <input class="vw-slider" type="range" style="--fill: 33%">
+   Set --fill from JS as the value changes (0%–100%).                          */
+.vw-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 30px;
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.vw-slider::-webkit-slider-runnable-track {
+  height: 16px;
+  border: var(--vw-border);
+  border-radius: var(--vw-pill);
+  background:
+    var(--vw-grad-fill) 0 0 / var(--fill, 33%) 100% no-repeat,
+    var(--vw-track);
+}
+.vw-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 26px;
+  height: 26px;
+  margin-top: -7px;
+  border: var(--vw-border);
+  border-radius: 50%;
+  background: var(--vw-cream);
+  box-shadow: 2px 2px 0 var(--vw-ink);
+}
+.vw-slider::-moz-range-track {
+  height: 12px;
+  border: var(--vw-border);
+  border-radius: var(--vw-pill);
+  background: var(--vw-track);
+}
+.vw-slider::-moz-range-progress { height: 12px; border-radius: var(--vw-pill); background: var(--vw-grad-fill); }
+.vw-slider::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border: var(--vw-border);
+  border-radius: 50%;
+  background: var(--vw-cream);
+}
+
+/* ---- chips -----------------------------------------------------------------
+   <button class="vw-chip" aria-pressed="true"><span class="vw-chip__swatch"></span>pink</button> */
+.vw-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  padding: 3px 10px 3px 4px;
+  border: var(--vw-border);
+  border-radius: var(--vw-pill);
+  background: var(--vw-cream);
+  color: var(--vw-ink);
+  box-shadow: 2px 2px 0 var(--vw-ink);
+  font: 20px/1 var(--vw-font-body);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.vw-chip:active { transform: translate(2px, 2px); box-shadow: none; }
+.vw-chip[aria-pressed="true"] { background: var(--vw-grad-primary); box-shadow: inset 2px 2px 0 rgba(26, 9, 51, 0.35); }
+.vw-chip__swatch {
+  width: 20px;
+  height: 20px;
+  border: var(--vw-border);
+  border-radius: 50%;
+}
+
+/* ---- status dot ------------------------------------------------------------- */
+.vw-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--vw-sun); }
+.vw-dot--on { background: var(--vw-mint); box-shadow: 0 0 6px var(--vw-mint); }
+
+/* ---- backgrounds -------------------------------------------------------------
+   .vw-sky        night-to-sunset gradient
+   .vw-grid       animated perspective floor (place at the bottom of a positioned box)
+   .vw-scanlines  CRT lines overlay (pointer-events: none)                        */
+.vw-sky { background: var(--vw-grad-sky); }
+.vw-grid {
+  position: absolute;
+  left: -50%;
+  right: -50%;
+  bottom: 0;
+  height: 42%;
+  background-image:
+    linear-gradient(var(--vw-pink) 2px, transparent 2px),
+    linear-gradient(90deg, var(--vw-pink) 2px, transparent 2px);
+  background-size: 44px 44px;
+  transform: perspective(260px) rotateX(62deg);
+  transform-origin: 50% 100%;
+  opacity: 0.32;
+  -webkit-mask-image: linear-gradient(to top, #000 10%, transparent 90%);
+  mask-image: linear-gradient(to top, #000 10%, transparent 90%);
+  animation: vw-grid-scroll 2.4s linear infinite;
+  pointer-events: none;
+}
+@keyframes vw-grid-scroll { to { background-position: 0 44px, 0 0; } }
+.vw-scanlines {
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.16) 0 1px, transparent 1px 3px);
+  pointer-events: none;
+  z-index: 10;
+}
+@media (prefers-reduced-motion: reduce) {
+  .vw-grid { animation: none; }
+}

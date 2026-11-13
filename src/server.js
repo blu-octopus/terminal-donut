@@ -16,6 +16,8 @@ const FILES = {
   '/index.html': ['index.html', 'text/html; charset=utf-8'],
   '/src/math.js': ['src/math.js', 'text/javascript'],
   '/src/donut-core.js': ['src/donut-core.js', 'text/javascript'],
+  '/ui/vapor.css': ['ui/vapor.css', 'text/css'],
+  '/design-system.html': ['design-system.html', 'text/html; charset=utf-8'],
 };
 
 // onMessage(msg, reply) handles phone messages; onClientsChange(n, ws) fires on connect/disconnect.

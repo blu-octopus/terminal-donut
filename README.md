@@ -14,12 +14,12 @@ npm start
 ```
 
 1. A QR code appears over the donut. Scan it with your phone's camera. Keep `npm start` running: every run makes a new link.
-2. Your phone becomes a controller. The donut renders on its screen too, with a control panel underneath:
-   - **tilt control:** turn it on (on iPhone, tap **Allow**), hold the phone comfortably, tap **recenter**, then tilt. The phone rotates the whole spinning donut.
-   - **speed:** 0–3×, plus pause. At 0, the donut only moves when you tilt.
-   - **color:** pink, sunset, ocean, matcha, mono.
+2. Your phone becomes a controller (`donut.exe`). The donut renders on its screen too, and the terminal mirrors exactly what the phone shows:
+   - **▶ tilt mode:** on iPhone, tap **Allow**. Lay the phone flat for a top-down view, then tilt to turn the donut. It eases in, cruises at a capped speed and eases out, and it never builds up spin.
+   - **speed:** spin speed, or the maximum turning speed in tilt mode. ❚❚ pauses the spin.
+   - **color:** vapor, pink, sunset, ocean, matcha, mono.
 
-   Changes sync both ways between your phone and the terminal.
+   Settings sync both ways between your phone and the terminal.
 
 Just want the donut? Run `npm run donut`.
 
@@ -35,12 +35,11 @@ To publish it (one-time setup): push to `main`, then go to **Settings → Pages 
 
 | key | does |
 |---|---|
-| `c` | cycle colors (pink, sunset, ocean, matcha, mono) |
+| `c` | cycle colors |
 | `+` / `-` | faster / slower |
 | `space` | pause the spin |
 | arrows | nudge the donut |
 | `p` | show/hide the QR code |
-| `r` | recenter the phone |
 | `q` | quit |
 
 ## How it works
@@ -59,7 +58,9 @@ To publish it (one-time setup): push to `main`, then go to **Settings → Pages 
 - **[src/server.js](src/server.js)**: a tiny web and WebSocket server, plus a free [Cloudflare quick tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/do-more-with-tunnels/trycloudflare/). Phones only share motion sensors with **https** pages, which is why the tunnel is needed.
 - **[src/donut-core.js](src/donut-core.js)**: the shared engine (rendering, color themes, motion). The terminal and the phone both run this same file, so they always match.
 - **[index.html](index.html)**: the controller your phone opens. It draws the donut on a canvas from its own sensor, so there's no lag, and sends settings back to the terminal.
-- **[src/main.js](src/main.js)**: the terminal app: loop, keyboard controls and state syncing. Motion "feel" constants (`FOLLOW_PHONE`, `SPIN_A` and others) live in donut-core.js.
+- **[src/main.js](src/main.js)**: the terminal app: loop, keyboard controls and state syncing. While a phone is connected, it mirrors the phone's pose.
+- **Feel:** the motion constants live at the top of the motion section in [src/donut-core.js](src/donut-core.js): `TILT_ACCEL`, `TILT_MAX_SPEED` and `SPIN_A`. If tilting feels backwards, set `TILT_DIRECTION = -1` in [src/math.js](src/math.js).
+- **[ui/vapor.css](ui/vapor.css)**: the vaporwave design system (tokens plus window, button, slider, chip and background components). See them all at [design-system.html](design-system.html).
 
 ### The tunnel binary
 

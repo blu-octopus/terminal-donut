@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0d0221">
+  <title>vapor.css</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Silkscreen&family=VT323&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./ui/vapor.css">
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--vw-text);
+      font-family: var(--vw-font-body);
+      font-size: 22px;
+    }
+    .hero { position: relative; overflow: hidden; padding: 56px 16px 120px; text-align: center; }
+    .hero h1 { margin: 0 0 8px; position: relative; z-index: 1; text-shadow: 3px 3px 0 var(--vw-blue), 0 0 24px var(--vw-pink); }
+    .hero p { margin: 0; position: relative; z-index: 1; color: var(--vw-text-dim); }
+    main {
+      max-width: 880px;
+      margin: -72px auto 0;
+      padding: 0 16px 64px;
+      position: relative;
+      display: grid;
+      gap: 24px;
+    }
+    .grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+    .stack { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+    .swatch { display: grid; gap: 4px; font-size: 18px; }
+    .swatch b { display: block; height: 56px; border: var(--vw-border); border-radius: var(--vw-radius-sm); box-shadow: var(--vw-shadow-sm); }
+    .swatch code { font-family: var(--vw-font-body); opacity: 0.75; }
+    .glass-demo { position: relative; border-radius: var(--vw-radius); overflow: hidden; padding: 24px; background: var(--vw-grad-sky); }
+    .glass-demo .blob { position: absolute; width: 140px; height: 140px; border-radius: 50%; background: var(--vw-pink); filter: blur(4px); top: 20px; left: 30%; }
+    .note { color: var(--vw-text-dim); font-size: 19px; margin: 0; }
+    .vw-window__body > * + * { margin-top: 12px; }
+  </style>
+</head>
+<body class="vw-sky">
+  <header class="hero">
+    <div class="vw-grid"></div>
+    <h1 class="vw-display">vapor.css</h1>
+    <p>the tiny design system behind donut.exe</p>
+  </header>
+
+  <main>
+    <section class="vw-window">
+      <header class="vw-titlebar">
+        <span class="vw-titlebar__title">colors.pal</span>
+        <span class="vw-titlebar__ctl" aria-hidden="true"><i>_</i><i>□</i><i>×</i></span>
+      </header>
+      <div class="vw-window__body">
+        <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(110px, 1fr))">
+          <div class="swatch"><b style="background: var(--vw-pink)"></b>pink<code>--vw-pink</code></div>
+          <div class="swatch"><b style="background: var(--vw-hot)"></b>hot<code>--vw-hot</code></div>
+          <div class="swatch"><b style="background: var(--vw-lavender)"></b>lavender<code>--vw-lavender</code></div>
+          <div class="swatch"><b style="background: var(--vw-periwinkle)"></b>periwinkle<code>--vw-periwinkle</code></div>
+          <div class="swatch"><b style="background: var(--vw-blue)"></b>blue<code>--vw-blue</code></div>
+          <div class="swatch"><b style="background: var(--vw-cyan)"></b>cyan<code>--vw-cyan</code></div>
+          <div class="swatch"><b style="background: var(--vw-mint)"></b>mint<code>--vw-mint</code></div>
+          <div class="swatch"><b style="background: var(--vw-sun)"></b>sun<code>--vw-sun</code></div>
+          <div class="swatch"><b style="background: var(--vw-cream)"></b>cream<code>--vw-cream</code></div>
+          <div class="swatch"><b style="background: var(--vw-ink)"></b>ink<code>--vw-ink</code></div>
+          <div class="swatch"><b style="background: var(--vw-grad-title)"></b>title<code>--vw-grad-title</code></div>
+          <div class="swatch"><b style="background: var(--vw-grad-fill)"></b>fill<code>--vw-grad-fill</code></div>
+        </div>
+      </div>
+    </section>
+
+    <div class="grid">
+      <section class="vw-window">
+        <header class="vw-titlebar">
+          <span class="vw-titlebar__title">type.ttf</span>
+          <span class="vw-titlebar__ctl" aria-hidden="true"><i>_</i><i>□</i><i>×</i></span>
+        </header>
+        <div class="vw-window__body">
+          <div class="vw-display">Silkscreen</div>
+          <div class="vw-label">label · silkscreen 11</div>
+          <div class="vw-body">VT323 body text, big and friendly: 22px.</div>
+        </div>
+      </section>
+
+      <section class="vw-window">
+        <header class="vw-titlebar">
+          <span class="vw-titlebar__title">buttons.exe</span>
+          <span class="vw-titlebar__ctl" aria-hidden="true"><i>_</i><i>□</i><i>×</i></span>
+        </header>
+        <div class="vw-window__body">
+          <div class="stack">
+            <button class="vw-btn">default</button>
+            <button class="vw-btn vw-btn--primary">primary</button>
+            <button class="vw-btn vw-btn--hot">no</button>
+          </div>
+          <div class="stack">
+            <button class="vw-btn vw-btn--icon" aria-label="pause">❚❚</button>
+            <button class="vw-btn vw-btn--icon" aria-label="play">▶</button>
+            <button class="vw-btn vw-btn--icon" aria-label="stop">■</button>
+            <button class="vw-btn" disabled>disabled</button>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <section class="vw-window vw-window--glass">
+      <header class="vw-titlebar">
+        <span class="vw-titlebar__title">glass.exe <span class="vw-dot vw-dot--on"></span></span>
+        <span class="vw-titlebar__ctl" aria-hidden="true"><i>_</i><i>□</i><i>×</i></span>
+      </header>
+      <div class="vw-window__body glass-demo">
+        <div class="blob"></div>
+        <div style="position: relative; display: grid; gap: 14px">
+          <button class="vw-btn vw-btn--glass vw-btn--block">▶ glass call to action</button>
+          <button class="vw-btn vw-btn--glass vw-btn--block" aria-pressed="true">■ pressed / on</button>
+          <input class="vw-slider" type="range" value="60" style="--fill: 60%" aria-label="demo slider"
+            oninput="this.style.setProperty('--fill', this.value + '%')">
+          <div class="stack">
+            <button class="vw-chip" aria-pressed="true"><span class="vw-chip__swatch" style="background: var(--vw-pink)"></span>vapor</button>
+            <button class="vw-chip"><span class="vw-chip__swatch" style="background: var(--vw-sun)"></span>sunset</button>
+            <button class="vw-chip"><span class="vw-chip__swatch" style="background: var(--vw-cyan)"></span>ocean</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <p class="note">components: .vw-window (+ --glass) · .vw-titlebar · .vw-btn (--primary, --hot, --glass, --icon, --block) · .vw-slider · .vw-chip · .vw-label · .vw-dot · .vw-sky · .vw-grid · .vw-scanlines</p>
+  </main>
+  <div class="vw-scanlines"></div>
+</body>
+</html>

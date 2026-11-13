@@ -52,18 +52,24 @@ export function toMatrix([w, x, y, z]) {
   ];
 }
 
-// Browser DeviceOrientationEvent angles (degrees) → quaternion.
-// The spec defines the rotation as Z(alpha) · X(beta) · Y(gamma).
-export function fromDeviceOrientation(alpha, beta, gamma) {
-  return mul(
-    mul(axisAngle(0, 0, 1, alpha * DEG), axisAngle(1, 0, 0, beta * DEG)),
-    axisAngle(0, 1, 0, gamma * DEG),
-  );
+// How far apart two rotations are, in radians.
+export function angleBetween(a, b) {
+  const d = Math.abs(a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3]);
+  return 2 * Math.acos(Math.min(1, d));
 }
 
-// Maps a phone rotation onto the donut. Tilting forward/back and left/right
-// pass straight through, so the donut leans the way the phone leans as you
-// look down at it.
+// Phone tilt → quaternion. Uses only beta (front/back) and gamma (left/right)
+// from DeviceOrientationEvent, so a phone lying flat is "no rotation" no
+// matter which compass direction it points. (The spec's full rotation is
+// Z(alpha)·X(beta)·Y(gamma); dropping alpha drops the compass heading.)
+export function fromTilt(beta, gamma) {
+  return mul(axisAngle(1, 0, 0, beta * DEG), axisAngle(0, 1, 0, gamma * DEG));
+}
+
+// Flip to -1 if tilting feels backwards: it mirrors both tilt axes.
+export const TILT_DIRECTION = 1;
+
+// Maps a phone rotation onto the donut.
 export function phoneToScene([w, x, y, z]) {
-  return [w, x, y, z];
+  return [w, TILT_DIRECTION * x, TILT_DIRECTION * y, z];
 }

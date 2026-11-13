@@ -3,17 +3,20 @@
 //   npm start               donut + phone controller (shows a QR code to scan)
 //   npm start -- --no-phone donut only, keyboard controls
 //
-// Keys: c color · +/- speed · space pause · arrows nudge · p QR · r recenter · q quit
+// Keys: c color · +/- speed · space pause · arrows nudge · p QR · q quit
+//
+// While a phone is connected, it is the source of truth for the donut's pose
+// and the terminal mirrors it, so both screens always show the same thing.
 
 import qrcode from 'qrcode-terminal';
-import { THEMES, createPose, setTilt, stepPose, render } from './donut-core.js';
+import { THEMES, createPose, stepPose, followPose, render } from './donut-core.js';
 import { createTerminalGrid, present } from './renderer.js';
 import { startServer, startTunnel } from './server.js';
 
 const usePhone = !process.argv.includes('--no-phone');
 const once = !process.stdout.isTTY; // piped? draw one frame and exit
 
-const PHONE_TIMEOUT_MS = 1500; // no tilt data this long → stop following the phone
+const PHONE_TIMEOUT_MS = 1000; // no pose from the phone this long → spin on our own
 const MAX_SPEED = 3;
 
 // ---- state -------------------------------------------------------------------
@@ -22,7 +25,7 @@ const shared = { theme: 0, speed: 1, paused: false };
 const state = {
   pose: createPose(),
   clients: 0,
-  lastTiltAt: 0,
+  remote: null, // { q, at, tilt } latest pose from the phone
   url: null,
   tunnelError: null,
   showQR: true,
@@ -44,8 +47,8 @@ function applySettings(msg) {
   syncPhones();
 }
 
-function recenter() {
-  state.pose.ref = null; // next reading becomes "neutral"
+function remoteActive() {
+  return state.remote && performance.now() - state.remote.at < PHONE_TIMEOUT_MS;
 }
 
 // ---- phone -------------------------------------------------------------------
@@ -53,13 +56,9 @@ let stopTunnel = () => {};
 if (usePhone && !once) {
   const server = await startServer({
     onMessage(msg) {
-      if (msg.t === 'o' && [msg.a, msg.b, msg.g].every(Number.isFinite)) {
-        setTilt(state.pose, msg.a, msg.b, msg.g);
-        state.lastTiltAt = performance.now();
-      } else if (msg.t === 'tilt' && msg.on === false) {
-        state.pose.tilt = null;
-      } else if (msg.t === 'recenter') {
-        recenter();
+      if (msg.t === 'pose' && Array.isArray(msg.q) && msg.q.length === 4 && msg.q.every(Number.isFinite)) {
+        const len = Math.hypot(...msg.q);
+        if (len > 0) state.remote = { q: msg.q.map((v) => v / len), at: performance.now(), tilt: !!msg.tilt };
       } else if (msg.t === 'set') {
         applySettings(msg);
       }
@@ -67,7 +66,7 @@ if (usePhone && !once) {
     onClientsChange(n, ws) {
       state.clients = n;
       if (n > 0) state.showQR = false;
-      if (n === 0) state.pose.tilt = null;
+      if (n === 0) state.remote = null;
       if (ws) ws.send(JSON.stringify({ t: 'state', ...shared }));
     },
   });
@@ -92,9 +91,10 @@ function frame() {
   const dt = once ? 0 : Math.min(0.1, (now - last) / 1000);
   last = now;
 
-  if (state.pose.tilt && now - state.lastTiltAt > PHONE_TIMEOUT_MS) state.pose.tilt = null;
-
-  render(grid, stepPose(state.pose, dt, shared));
+  const M = remoteActive()
+    ? followPose(state.pose, state.remote.q, dt)
+    : stepPose(state.pose, dt, shared);
+  render(grid, M);
   const overlay = state.showQR ? qrOverlay() : null;
   present(grid, THEMES[shared.theme], statusLine(), overlay);
 }
@@ -116,7 +116,7 @@ function statusLine() {
   const info = `${THEMES[shared.theme].name} · ${shared.paused ? 'paused' : `${shared.speed.toFixed(1)}x`}`;
   const keys = 'c color · +/- speed · q quit';
   if (!usePhone) return ` ${info} · arrows nudge · space pause · ${keys}`;
-  if (state.pose.tilt) return ` tilt on · ${info} · r recenter · ${keys}`;
+  if (remoteActive()) return ` ${state.remote.tilt ? 'tilt on' : 'mirroring phone'} · ${info} · ${keys}`;
   if (state.clients > 0) return ` phone connected · ${info} · ${keys}`;
   if (state.tunnelError) return ` phone unavailable (${state.tunnelError}) · ${keys}`;
   if (!state.url) return ` starting phone link… · ${keys}`;
@@ -148,10 +148,6 @@ function onKey(key) {
       return applySettings({ paused: !shared.paused });
     case 'p':
       state.showQR = !state.showQR;
-      break;
-    case 'r':
-      recenter();
-      broadcast({ t: 'recenter' });
       break;
     case '\x1b[A': pose.A -= 0.3; break; // up
     case '\x1b[B': pose.A += 0.3; break; // down
