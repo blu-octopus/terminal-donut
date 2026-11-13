@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#14070f">
+  <title>donut remote</title>
+  <style>
+    :root {
+      --bg: #14070f;
+      --fg: #ffe3f1;
+      --dim: rgba(255, 227, 241, 0.55);
+      --line: rgba(255, 227, 241, 0.12);
+      --accent: #ff5faf; /* replaced by the current theme's color */
+      --glow: rgba(255, 95, 175, 0.18);
+    }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body { margin: 0; height: 100%; overflow: hidden; }
+    body {
+      background: var(--bg);
+      color: var(--fg);
+      font: 15px/1.4 ui-monospace, "SF Mono", Menlo, monospace;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+    }
+
+    /* ---- donut stage (top) ---- */
+    .glow {
+      position: fixed;
+      inset: 0 0 auto 0;
+      height: 64dvh;
+      background: radial-gradient(closest-side at 50% 50%, var(--glow), transparent);
+      transition: background 0.4s;
+    }
+    #stage {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 64dvh;
+    }
+
+    /* ---- control panel (bottom, frosted glass over the donut) ---- */
+    .panel {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 50dvh;
+      overflow-y: auto;
+      padding: 10px 20px calc(20px + env(safe-area-inset-bottom));
+      border-radius: 28px 28px 0 0;
+      border-top: 1px solid var(--line);
+      background: rgba(28, 10, 21, 0.55);
+      backdrop-filter: blur(18px) saturate(1.4);
+      -webkit-backdrop-filter: blur(18px) saturate(1.4);
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+    .grabber {
+      width: 36px;
+      height: 4px;
+      border-radius: 2px;
+      background: var(--line);
+      margin: 0 auto;
+      flex: none;
+    }
+    .row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .label { font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--dim); }
+
+    .status { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--dim); min-width: 0; }
+    .status span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: #f5b942; flex: none; }
+    .dot.ok { background: #5fe39a; box-shadow: 0 0 8px #5fe39a; }
+    .dot.bad { background: #ff5f6d; }
+
+    button {
+      font: inherit;
+      color: var(--fg);
+      background: transparent;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 8px 14px;
+      font-size: 13px;
+    }
+    button:disabled { opacity: 0.35; }
+    button:active:not(:disabled) { transform: scale(0.96); }
+
+    /* tilt switch */
+    .card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 16px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.03);
+    }
+    .card .title { font-size: 16px; }
+    .card .sub { font-size: 12px; color: var(--dim); }
+    .switch {
+      position: relative;
+      width: 52px;
+      height: 32px;
+      padding: 0;
+      border: 0;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.14);
+      flex: none;
+      transition: background 0.2s;
+    }
+    .switch::after {
+      content: '';
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: #fff;
+      transition: transform 0.2s;
+    }
+    .switch[aria-checked="true"] { background: var(--accent); }
+    .switch[aria-checked="true"]::after { transform: translateX(20px); }
+
+    /* speed slider */
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 32px;
+      background: transparent;
+      margin: 0;
+    }
+    input[type="range"]::-webkit-slider-runnable-track {
+      height: 6px;
+      border-radius: 3px;
+      background: linear-gradient(to right, var(--accent) var(--fill, 33%), rgba(255, 255, 255, 0.14) var(--fill, 33%));
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 26px;
+      height: 26px;
+      margin-top: -10px;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    }
+    input[type="range"]::-moz-range-track { height: 6px; border-radius: 3px; background: rgba(255, 255, 255, 0.14); }
+    input[type="range"]::-moz-range-progress { height: 6px; border-radius: 3px; background: var(--accent); }
+    input[type="range"]::-moz-range-thumb { width: 26px; height: 26px; border: 0; border-radius: 50%; background: #fff; }
+    #speedValue { font-variant-numeric: tabular-nums; }
+
+    /* color chips */
+    .chips { display: flex; gap: 8px; flex-wrap: wrap; }
+    .chip {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px 8px 8px;
+    }
+    .chip .swatch { width: 18px; height: 18px; border-radius: 50%; }
+    .chip[aria-pressed="true"] { border-color: var(--fg); background: rgba(255, 255, 255, 0.08); }
+  </style>
+</head>
+<body>
+  <div class="glow"></div>
+  <canvas id="stage"></canvas>
+
+  <div class="panel">
+    <div class="grabber"></div>
+
+    <div class="row">
+      <div class="status"><div class="dot" id="dot"></div><span id="status">connecting…</span></div>
+      <button id="recenter" disabled>recenter</button>
+    </div>
+
+    <div class="card">
+      <div>
+        <div class="title">tilt control</div>
+        <div class="sub" id="tiltSub">steer the donut with your phone</div>
+      </div>
+      <button class="switch" id="tilt" role="switch" aria-checked="false" aria-label="tilt control"></button>
+    </div>
+
+    <div>
+      <div class="row">
+        <span class="label">speed</span>
+        <button id="pause">pause</button>
+      </div>
+      <div class="row">
+        <input id="speed" type="range" min="0" max="3" step="0.05" value="1" aria-label="speed">
+        <span id="speedValue">1.0×</span>
+      </div>
+    </div>
+
+    <div>
+      <div class="label" style="margin-bottom: 10px">color</div>
+      <div class="chips" id="chips"></div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { THEMES, SHADES, xtermToCss, createGrid, render, createPose, setTilt, stepPose }
+      from '/src/donut-core.js';
+
+    const $ = (id) => document.getElementById(id);
+    const shared = { theme: 0, speed: 1, paused: false };
+    const pose = createPose();
+    let tiltOn = false;
+
+    // ---- connection to the terminal ------------------------------------------
+    let ws;
+    let failures = 0;
+
+    function setStatus(text, kind) {
+      $('status').textContent = text;
+      $('dot').className = 'dot ' + (kind || '');
+    }
+
+    function connect() {
+      const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+      ws = new WebSocket(`${proto}://${location.host}`);
+      ws.onopen = () => {
+        failures = 0;
+        setStatus('connected to your terminal', 'ok');
+      };
+      ws.onmessage = (e) => {
+        const msg = JSON.parse(e.data);
+        if (msg.t === 'state') {
+          Object.assign(shared, { theme: msg.theme, speed: msg.speed, paused: msg.paused });
+          updateUI();
+        } else if (msg.t === 'recenter') {
+          pose.ref = null;
+        }
+      };
+      ws.onclose = () => {
+        failures++;
+        if (failures < 4) setStatus('reconnecting…');
+        else setStatus("can't reach your laptop. is npm start running? rescan the new QR", 'bad');
+        setTimeout(connect, 1000);
+      };
+    }
+    connect();
+
+    function send(msg) {
+      if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(msg));
+    }
+
+    function change(settings) {
+      Object.assign(shared, settings);
+      updateUI();
+      send({ t: 'set', ...settings });
+    }
+
+    // ---- controls ----------------------------------------------------------------
+    const chips = THEMES.map((theme, i) => {
+      const chip = document.createElement('button');
+      chip.className = 'chip';
+      const c = theme.colors.map(xtermToCss);
+      chip.innerHTML = `<span class="swatch" style="background: radial-gradient(circle at 35% 35%, ${c[11]}, ${c[6]} 55%, ${c[1]})"></span>${theme.name}`;
+      chip.addEventListener('click', () => change({ theme: i }));
+      $('chips').append(chip);
+      return chip;
+    });
+
+    $('speed').addEventListener('input', (e) => change({ speed: Number(e.target.value), paused: false }));
+    $('pause').addEventListener('click', () => change({ paused: !shared.paused }));
+
+    function updateUI() {
+      const colors = THEMES[shared.theme].colors;
+      document.documentElement.style.setProperty('--accent', xtermToCss(colors[8]));
+      document.documentElement.style.setProperty('--glow', xtermToCss(colors[4]).replace('rgb', 'rgba').replace(')', ',0.35)'));
+      chips.forEach((chip, i) => chip.setAttribute('aria-pressed', i === shared.theme));
+      $('speed').value = shared.speed;
+      $('speed').style.setProperty('--fill', `${(shared.speed / 3) * 100}%`);
+      $('speedValue').textContent = shared.paused ? 'paused' : `${shared.speed.toFixed(1)}×`;
+      $('pause').textContent = shared.paused ? 'play' : 'pause';
+      $('tilt').setAttribute('aria-checked', tiltOn);
+      $('recenter').disabled = !tiltOn;
+    }
+    updateUI();
+
+    // ---- tilt ------------------------------------------------------------------
+    let latest = null;
+
+    function onOrientation(e) {
+      if (e.alpha == null || e.beta == null || e.gamma == null) return;
+      setTilt(pose, e.alpha, e.beta, e.gamma);
+      latest = { t: 'o', a: e.alpha, b: e.beta, g: e.gamma };
+    }
+
+    async function enableTilt() {
+      if (!window.isSecureContext) {
+        $('tiltSub').textContent = 'needs the https link from the QR code';
+        return;
+      }
+      // iOS asks for permission, and only from a tap.
+      if (typeof DeviceOrientationEvent !== 'undefined' &&
+          typeof DeviceOrientationEvent.requestPermission === 'function') {
+        try {
+          if (await DeviceOrientationEvent.requestPermission() !== 'granted') {
+            $('tiltSub').textContent = 'motion access denied. reload to try again';
+            return;
+          }
+        } catch (err) {
+          $('tiltSub').textContent = 'permission error: ' + err.message;
+          return;
+        }
+      }
+      window.addEventListener('deviceorientation', onOrientation);
+      tiltOn = true;
+      pose.ref = null;
+      send({ t: 'recenter' });
+      $('tiltSub').textContent = 'hold it comfortably, tap recenter, then tilt';
+      try { await navigator.wakeLock?.request('screen'); } catch {}
+      updateUI();
+    }
+
+    function disableTilt() {
+      window.removeEventListener('deviceorientation', onOrientation);
+      tiltOn = false;
+      pose.tilt = null;
+      latest = null;
+      send({ t: 'tilt', on: false });
+      $('tiltSub').textContent = 'steer the donut with your phone';
+      updateUI();
+    }
+
+    $('tilt').addEventListener('click', () => (tiltOn ? disableTilt() : enableTilt()));
+    $('recenter').addEventListener('click', () => {
+      pose.ref = null;
+      send({ t: 'recenter' });
+      navigator.vibrate?.(15);
+    });
+
+    // ---- drawing -----------------------------------------------------------------
+    const canvas = $('stage');
+    const ctx = canvas.getContext('2d');
+    const COLS = 68;
+    let grid, cellW, cellH;
+
+    function resize() {
+      const dpr = window.devicePixelRatio || 1;
+      const { width, height } = canvas.getBoundingClientRect();
+      canvas.width = Math.round(width * dpr);
+      canvas.height = Math.round(height * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      cellW = width / COLS;
+      cellH = cellW * 2; // same 1:2 cell shape as a terminal
+      grid = createGrid(COLS, Math.floor(height / cellH));
+      ctx.font = `${cellW / 0.6}px ui-monospace, "SF Mono", Menlo, monospace`;
+      ctx.textBaseline = 'top';
+      ctx.textAlign = 'center';
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    let last = performance.now();
+    function frame(now) {
+      const dt = Math.min(0.1, (now - last) / 1000);
+      last = now;
+      if (latest) {
+        send(latest);
+        latest = null;
+      }
+
+      render(grid, stepPose(pose, dt, shared));
+
+      const { width, height } = canvas.getBoundingClientRect();
+      ctx.clearRect(0, 0, width, height);
+      const offsetY = (height - grid.height * cellH) / 2;
+      const colors = THEMES[shared.theme].colors.map(xtermToCss);
+      for (let i = 0; i < grid.shade.length; i++) {
+        const s = grid.shade[i];
+        if (s < 0) continue;
+        ctx.fillStyle = colors[s];
+        ctx.fillText(SHADES[s], (i % grid.width + 0.5) * cellW, offsetY + Math.floor(i / grid.width) * cellH);
+      }
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  </script>
+</body>
+</html>

@@ -1,7 +1,7 @@
 {
   "name": "terminal-donut",
   "version": "0.1.0",
-  "description": "A spinning 3D ASCII donut in the terminal, built step by step — and later steered by tilting your phone.",
+  "description": "A spinning 3D ASCII donut in the terminal that you steer by tilting your phone.",
   "type": "module",
   "private": true,
   "scripts": {
@@ -10,9 +10,14 @@
     "step3": "node lessons/03-torus.js",
     "step4": "node lessons/04-spin.js",
     "step5": "node lessons/05-donut.js",
-    "start": "node lessons/05-donut.js"
+    "start": "node src/main.js",
+    "donut": "node src/main.js --no-phone"
   },
   "engines": {
     "node": ">=18"
+  },
+  "dependencies": {
+    "qrcode-terminal": "^0.12.0",
+    "ws": "^8.22.1"
   }
 }
