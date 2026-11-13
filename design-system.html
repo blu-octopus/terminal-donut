@@ -133,7 +133,7 @@
         <span class="vw-titlebar__ctl" aria-hidden="true"><i>_</i><i>□</i><i>×</i></span>
       </header>
       <div class="vw-window__body" style="background: var(--vw-dusk); text-align: center; padding: 28px 16px">
-        <span class="vw-logo">DOUGHNUT</span>
+        <span class="vw-logo">DOUGHNUT3D</span>
       </div>
     </section>
 
@@ -157,11 +157,14 @@
     // Logo glitches out, then heads back to the donut.
     document.querySelectorAll('[data-glitch-link]').forEach((link) => {
       link.addEventListener('click', (e) => {
-        feedback('glitch');
-        if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
         e.preventDefault();
+        try {
+          feedback('glitch');
+        } catch {} // sound/haptics are a bonus; never let them block the link
+        const go = () => (location.href = link.href);
+        if (matchMedia('(prefers-reduced-motion: reduce)').matches) return go();
         link.classList.add('vw-logo--glitch');
-        setTimeout(() => (location.href = link.href), 300);
+        setTimeout(go, 300);
       });
     });
   </script>

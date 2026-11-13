@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#0d0221">
-  <title>donut.exe</title>
+  <title>DOUGHNUT3D</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Silkscreen&family=VT323&display=swap" rel="stylesheet">
@@ -29,16 +29,37 @@
       --gap: clamp(10px, 2.2vmin, 24px);
     }
 
-    /* ---- donut stage: logo on top, donut fills the rest ---- */
+    /* ---- full-screen backdrop: sky + grid floor, tinted by the color theme ----
+       The theme sets --sky-1/2/3 and --vw-grid-line from JS; @property lets
+       the gradient colors animate smoothly when the theme changes. */
+    @property --sky-1 { syntax: '<color>'; inherits: true; initial-value: #36055e; }
+    @property --sky-2 { syntax: '<color>'; inherits: true; initial-value: #8700d7; }
+    @property --sky-3 { syntax: '<color>'; inherits: true; initial-value: #ff5fd7; }
+    @property --vw-grid-line { syntax: '<color>'; inherits: true; initial-value: #ff71ce; }
+    body { transition: --sky-1 0.8s, --sky-2 0.8s, --sky-3 0.8s, --vw-grid-line 0.8s; }
+    .backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      background: linear-gradient(180deg,
+        var(--vw-night) 0%,
+        color-mix(in srgb, var(--sky-1) 55%, var(--vw-night)) 40%,
+        var(--sky-2) 82%,
+        var(--sky-3) 130%);
+      overflow: hidden;
+    }
+    .backdrop .vw-grid { height: 50%; opacity: 0.4; }
+
+    /* ---- donut stage: floats in the top half, logo on top ---- */
     .stage {
       position: relative;
-      flex: 1;
+      z-index: 1;
+      flex: 0 1 58%;
       min-height: 0;
       display: flex;
       flex-direction: column;
-      overflow: hidden;
     }
-    .stage .vw-sky, .glow { position: absolute; inset: 0; }
+    .glow { position: absolute; inset: 0; }
     .glow {
       background: radial-gradient(closest-side at 50% 55%, var(--glow, rgba(255, 113, 206, 0.3)), transparent 75%);
       transition: background 0.4s;
@@ -55,16 +76,14 @@
     .canvas-wrap { position: relative; z-index: 1; flex: 1; min-height: 0; }
     #stage { position: absolute; inset: 0; width: 100%; height: 100%; }
 
-    /* ---- controller: a glass panel, no title bar ----
-       It slides up 1.75rem over the stage so its frosted glass softly blurs
-       the donut's bottom edge. */
+    /* ---- controller: a glass panel at the bottom, over the grid floor ---- */
     .controller {
       position: relative;
       z-index: 2;
       flex: none;
       width: min(100% - 2 * var(--gap), 30rem);
       max-height: 60%;
-      margin: -1.75rem auto calc(var(--gap) + env(safe-area-inset-bottom));
+      margin: auto auto calc(var(--gap) + env(safe-area-inset-bottom));
       display: flex;
       flex-direction: column;
     }
@@ -84,7 +103,7 @@
     .row .vw-label { flex: none; width: 3.4rem; }
     .row .vw-slider { flex: 1; min-width: 0; }
     .row .vw-btn--icon { flex: none; }
-    #speedValue { flex: none; width: 3.2ch; text-align: right; font-size: 1.375rem; }
+    #speedValue { flex: none; width: 3.6ch; margin-right: 0.75rem; text-align: right; font-size: 1.375rem; }
 
     .chips {
       display: flex;
@@ -98,13 +117,13 @@
   </style>
 </head>
 <body>
+  <div class="backdrop" aria-hidden="true"><div class="vw-grid"></div></div>
+
   <div class="stage">
-    <div class="vw-sky"></div>
     <div class="glow" id="glow"></div>
-    <div class="vw-grid"></div>
     <header class="masthead">
       <!-- easter egg: the logo opens the design system -->
-      <a class="vw-logo" href="./design-system.html" data-glitch-link>DOUGHNUT</a>
+      <a class="vw-logo" href="./design-system.html" data-glitch-link>DOUGHNUT3D</a>
       <div class="linked vw-label" id="linked" hidden><span class="vw-dot vw-dot--on"></span> linked to terminal</div>
     </header>
     <div class="canvas-wrap"><canvas id="stage" aria-label="spinning ASCII donut"></canvas></div>
@@ -150,11 +169,14 @@
     // Logo glitches out, then opens the design system.
     document.querySelectorAll('[data-glitch-link]').forEach((link) => {
       link.addEventListener('click', (e) => {
-        feedback('glitch');
-        if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
         e.preventDefault();
+        try {
+          feedback('glitch');
+        } catch {} // sound/haptics are a bonus; never let them block the link
+        const go = () => (location.href = link.href);
+        if (matchMedia('(prefers-reduced-motion: reduce)').matches) return go();
         link.classList.add('vw-logo--glitch');
-        setTimeout(() => (location.href = link.href), 300);
+        setTimeout(go, 300);
       });
     });
 
@@ -245,6 +267,12 @@
     function updateUI() {
       const colors = THEMES[shared.theme].colors;
       $('glow').style.setProperty('--glow', xtermToCss(colors[5]).replace('rgb', 'rgba').replace(')', ',0.45)'));
+      // The whole sky follows the theme: dark tones up top, bright horizon below.
+      const body = document.body.style;
+      body.setProperty('--sky-1', xtermToCss(colors[1]));
+      body.setProperty('--sky-2', xtermToCss(colors[3]));
+      body.setProperty('--sky-3', xtermToCss(colors[8]));
+      body.setProperty('--vw-grid-line', xtermToCss(colors[9]));
       chips.forEach((chip, i) => chip.setAttribute('aria-pressed', i === shared.theme));
       $('speed').value = shared.speed;
       $('speed').style.setProperty('--fill', `${(shared.speed / 3) * 100}%`);
@@ -255,7 +283,8 @@
       $('sound').textContent = sfx.enabled ? '♪' : '×';
       $('sound').setAttribute('aria-label', sfx.enabled ? 'sound on' : 'sound off');
       $('start').setAttribute('aria-pressed', tiltOn);
-      $('start').textContent = tiltOn ? 'STOP' : 'START';
+      // START begins tilting; AUTO hands the donut back to auto-spin.
+      $('start').textContent = tiltOn ? 'AUTO' : 'START';
     }
     updateUI();
 

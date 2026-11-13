@@ -60,7 +60,7 @@ To publish it (one-time setup): push to `main`, then go to **Settings → Pages 
 - **[index.html](index.html)**: the controller your phone opens. It draws the donut on a canvas from its own sensor, so there's no lag, and sends settings back to the terminal.
 - **[src/main.js](src/main.js)**: the terminal app: loop, keyboard controls and state syncing. While a phone is connected, it mirrors the phone's pose.
 - **Feel:** the motion constants live at the top of the motion section in [src/donut-core.js](src/donut-core.js): `TILT_ACCEL`, `TILT_MAX_SPEED` and `SPIN_A`. If tilting feels backwards, set `TILT_DIRECTION = -1` in [src/math.js](src/math.js).
-- **[ui/vapor.css](ui/vapor.css)**: the vaporwave design system (tokens plus logo, window, button, slider, chip and background components, all in rem so a page can scale them). **[ui/vapor-fx.js](ui/vapor-fx.js)** adds synthesized sound bytes (Web Audio, no files) and haptics. See them all at [design-system.html](design-system.html), or tap the DOUGHNUT logo on the donut page (tap the vapor.css logo to go back).
+- **[ui/vapor.css](ui/vapor.css)**: the vaporwave design system (tokens plus logo, window, button, slider, chip and background components, all in rem so a page can scale them). **[ui/vapor-fx.js](ui/vapor-fx.js)** adds synthesized sound bytes (Web Audio, no files) and haptics. See them all at [design-system.html](design-system.html), or tap the DOUGHNUT3D logo on the donut page (tap the vapor.css logo to go back).
 
 ### The tunnel binary
 

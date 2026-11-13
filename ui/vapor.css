@@ -300,28 +300,45 @@
 
 /* ---- backgrounds -------------------------------------------------------------
    .vw-sky        night-to-sunset gradient
-   .vw-grid       animated perspective floor (place at the bottom of a positioned box)
+   .vw-grid       animated perspective floor (place at the bottom of a positioned box;
+                  set --vw-grid-line to recolor it)
    .vw-scanlines  CRT lines overlay (pointer-events: none)                        */
 .vw-sky { background: var(--vw-grad-sky); }
+/* The box is the floor's area on screen: its top edge is the horizon, and
+   the grid plane (::before) recedes toward it in perspective. Set the box's
+   height to place the horizon. */
 .vw-grid {
   position: absolute;
-  left: -50%;
-  right: -50%;
+  left: 0;
+  right: 0;
   bottom: 0;
   height: 42%;
-  background-image:
-    linear-gradient(var(--vw-pink) 2px, transparent 2px),
-    linear-gradient(90deg, var(--vw-pink) 2px, transparent 2px);
-  background-size: 44px 44px;
-  transform: perspective(260px) rotateX(62deg);
-  transform-origin: 50% 100%;
+  overflow: hidden;
+  perspective: 240px;
+  perspective-origin: 50% 0;
   opacity: 0.32;
-  -webkit-mask-image: linear-gradient(to top, #000 10%, transparent 90%);
-  mask-image: linear-gradient(to top, #000 10%, transparent 90%);
-  animation: vw-grid-scroll 2.4s linear infinite;
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 45%);
+  mask-image: linear-gradient(to bottom, transparent, #000 45%);
   pointer-events: none;
 }
-@keyframes vw-grid-scroll { to { background-position: 0 44px, 0 0; } }
+.vw-grid::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -150%;
+  right: -150%;
+  /* Just shy of the camera (perspective / sin 80° ≈ 244px): deeper and the
+     browser culls the plane; this deep it still projects past the bottom. */
+  height: 236px;
+  background-image:
+    linear-gradient(var(--vw-grid-line, var(--vw-pink)) 2px, transparent 2px),
+    linear-gradient(90deg, var(--vw-grid-line, var(--vw-pink)) 2px, transparent 2px);
+  background-size: 26px 26px;
+  transform: rotateX(80deg);
+  transform-origin: 50% 0;
+  animation: vw-grid-scroll 1.6s linear infinite;
+}
+@keyframes vw-grid-scroll { to { background-position: 0 26px, 0 0; } }
 .vw-scanlines {
   position: fixed;
   inset: 0;
@@ -330,6 +347,6 @@
   z-index: 10;
 }
 @media (prefers-reduced-motion: reduce) {
-  .vw-grid, .vw-logo--glitch { animation: none; }
+  .vw-grid::before, .vw-logo--glitch { animation: none; }
   .vw-btn, .vw-chip { transition: none; }
 }
