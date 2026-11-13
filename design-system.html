@@ -16,10 +16,10 @@
       min-height: 100vh;
       color: var(--vw-text);
       font-family: var(--vw-font-body);
-      font-size: 22px;
+      font-size: 1.375rem;
     }
     .hero { position: relative; overflow: hidden; padding: 56px 16px 120px; text-align: center; }
-    .hero h1 { margin: 0 0 8px; position: relative; z-index: 1; text-shadow: 3px 3px 0 var(--vw-blue), 0 0 24px var(--vw-pink); }
+    .hero h1 { margin: 0 0 12px; position: relative; z-index: 1; font-weight: normal; }
     .hero p { margin: 0; position: relative; z-index: 1; color: var(--vw-text-dim); }
     main {
       max-width: 880px;
@@ -43,7 +43,8 @@
 <body class="vw-sky">
   <header class="hero">
     <div class="vw-grid"></div>
-    <h1 class="vw-display">vapor.css</h1>
+    <!-- tap the logo to go back to the donut -->
+    <h1><a class="vw-logo" href="./index.html" data-glitch-link>vapor.css</a></h1>
     <p>the tiny design system behind donut.exe</p>
   </header>
 
@@ -126,8 +127,43 @@
       </div>
     </section>
 
-    <p class="note">components: .vw-window (+ --glass) · .vw-titlebar · .vw-btn (--primary, --hot, --glass, --icon, --block) · .vw-slider · .vw-chip · .vw-label · .vw-dot · .vw-sky · .vw-grid · .vw-scanlines</p>
+    <section class="vw-window">
+      <header class="vw-titlebar">
+        <span class="vw-titlebar__title">logo.bmp</span>
+        <span class="vw-titlebar__ctl" aria-hidden="true"><i>_</i><i>□</i><i>×</i></span>
+      </header>
+      <div class="vw-window__body" style="background: var(--vw-dusk); text-align: center; padding: 28px 16px">
+        <span class="vw-logo">DOUGHNUT</span>
+      </div>
+    </section>
+
+    <p class="note">sound + haptics: ui/vapor-fx.js → sfx.play('click' | 'select' | 'tick' | 'start' | 'stop' | 'glitch'), haptic()</p>
+    <p class="note">components: .vw-logo (+ --glitch) · .vw-window (+ --glass) · .vw-titlebar · .vw-btn (--primary, --hot, --glass, --icon, --block) · .vw-slider · .vw-chip · .vw-label · .vw-dot · .vw-sky · .vw-grid · .vw-scanlines</p>
   </main>
   <div class="vw-scanlines"></div>
+  <script type="module">
+    import { sfx, haptic } from './ui/vapor-fx.js';
+    const desktop = matchMedia('(hover: hover) and (pointer: fine)').matches;
+    const feedback = (sound, arg) => (desktop ? sfx.play(sound, arg) : haptic());
+
+    // Every demo control gets its sound (desktop) or buzz (phone).
+    document.querySelectorAll('.vw-btn').forEach((b) =>
+      b.addEventListener('click', () => feedback(b.textContent.includes('▶') ? 'start' : 'click')));
+    document.querySelectorAll('.vw-chip').forEach((c, i) => c.addEventListener('click', () => {
+      document.querySelectorAll('.vw-chip').forEach((o) => o.setAttribute('aria-pressed', o === c));
+      feedback('select', i);
+    }));
+
+    // Logo glitches out, then heads back to the donut.
+    document.querySelectorAll('[data-glitch-link]').forEach((link) => {
+      link.addEventListener('click', (e) => {
+        feedback('glitch');
+        if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+        e.preventDefault();
+        link.classList.add('vw-logo--glitch');
+        setTimeout(() => (location.href = link.href), 300);
+      });
+    });
+  </script>
 </body>
 </html>

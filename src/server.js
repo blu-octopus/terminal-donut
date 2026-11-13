@@ -17,6 +17,7 @@ const FILES = {
   '/src/math.js': ['src/math.js', 'text/javascript'],
   '/src/donut-core.js': ['src/donut-core.js', 'text/javascript'],
   '/ui/vapor.css': ['ui/vapor.css', 'text/css'],
+  '/ui/vapor-fx.js': ['ui/vapor-fx.js', 'text/javascript'],
   '/design-system.html': ['design-system.html', 'text/html; charset=utf-8'],
 };
 

@@ -3,6 +3,9 @@
    Retro-OS windows, ink outlines, hard offset shadows, pastel gradients,
    pixel type. See design-system.html for every component in one place.
 
+   Sizes are in rem, so a page can scale the whole system by setting the root
+   font-size (e.g. html { font-size: clamp(13px, 1vmin + 9px, 18px) }).
+
    Fonts (add to <head>):
    <link href="https://fonts.googleapis.com/css2?family=Silkscreen&family=VT323&display=swap" rel="stylesheet">
    ========================================================================== */
@@ -40,8 +43,8 @@
 
   /* shape */
   --vw-border: 2px solid var(--vw-ink);
-  --vw-radius: 14px;
-  --vw-radius-sm: 10px;
+  --vw-radius: 0.875rem;
+  --vw-radius-sm: 0.625rem;
   --vw-pill: 999px;
   --vw-shadow: 4px 4px 0 var(--vw-ink);
   --vw-shadow-sm: 3px 3px 0 var(--vw-ink);
@@ -52,22 +55,47 @@
   --vw-font-body: 'VT323', ui-monospace, monospace;
 
   /* space */
-  --vw-1: 4px;
-  --vw-2: 8px;
-  --vw-3: 12px;
-  --vw-4: 16px;
-  --vw-5: 24px;
+  --vw-1: 0.25rem;
+  --vw-2: 0.5rem;
+  --vw-3: 0.75rem;
+  --vw-4: 1rem;
+  --vw-5: 1.5rem;
 }
 
 /* ---- type ----------------------------------------------------------------- */
-.vw-display { font-family: var(--vw-font-display); font-size: 28px; line-height: 1.1; }
-.vw-body { font-family: var(--vw-font-body); font-size: 22px; line-height: 1.15; }
+.vw-display { font-family: var(--vw-font-display); font-size: 1.75rem; line-height: 1.1; }
+.vw-body { font-family: var(--vw-font-body); font-size: 1.375rem; line-height: 1.15; }
 .vw-label {
   font-family: var(--vw-font-display);
-  font-size: 11px;
+  font-size: 0.6875rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--vw-lavender);
+}
+
+/* ---- logo ------------------------------------------------------------------
+   <a class="vw-logo" href="…">DOUGHNUT</a>
+   Chunky pixel wordmark with a blue drop and pink neon glow. Add
+   .vw-logo--glitch to play a short CRT glitch (e.g. right before navigating). */
+.vw-logo {
+  display: inline-block;
+  font-family: var(--vw-font-display);
+  font-size: 2.125rem;
+  line-height: 1;
+  letter-spacing: 0.06em;
+  color: var(--vw-cream);
+  text-decoration: none;
+  text-shadow: 3px 3px 0 var(--vw-blue), 0 0 24px var(--vw-pink);
+  -webkit-tap-highlight-color: transparent;
+  cursor: pointer;
+}
+.vw-logo--glitch { animation: vw-glitch 0.28s steps(2) both; }
+@keyframes vw-glitch {
+  0% { transform: translate(0); filter: none; }
+  25% { transform: translate(-3px, 1px) skewX(-8deg); text-shadow: -3px 0 0 var(--vw-cyan), 3px 0 0 var(--vw-hot); }
+  50% { transform: translate(3px, -1px) skewX(6deg); opacity: 0.7; }
+  75% { transform: translate(-1px, 0); text-shadow: 3px 0 0 var(--vw-cyan), -3px 0 0 var(--vw-hot); }
+  100% { transform: translate(0); opacity: 0; }
 }
 
 /* ---- window ----------------------------------------------------------------
@@ -92,14 +120,14 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--vw-2);
-  padding: 5px 6px 5px 10px;
+  padding: 0.3125rem 0.375rem 0.3125rem 0.625rem;
   background: var(--vw-grad-title);
   border-bottom: var(--vw-border);
   color: var(--vw-ink);
 }
 .vw-titlebar__title {
   font-family: var(--vw-font-display);
-  font-size: 12px;
+  font-size: 0.75rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -108,12 +136,12 @@
 .vw-titlebar__ctl i {
   display: grid;
   place-items: center;
-  width: 18px;
-  height: 18px;
+  width: 1.125rem;
+  height: 1.125rem;
   border: var(--vw-border);
   border-radius: 4px;
   background: var(--vw-cream);
-  font: 12px/1 var(--vw-font-display);
+  font: 0.75rem/1 var(--vw-font-display);
   font-style: normal;
 }
 .vw-window__body { padding: var(--vw-4); }
@@ -135,16 +163,16 @@
   align-items: center;
   justify-content: center;
   gap: var(--vw-2);
-  min-height: 40px;
-  padding: 6px 16px;
+  min-height: 2.5rem;
+  padding: 0.375rem 1rem;
   border: var(--vw-border);
   border-radius: var(--vw-radius-sm);
   background: var(--vw-cream);
   color: var(--vw-ink);
   box-shadow: var(--vw-shadow-sm);
-  font: 22px/1 var(--vw-font-body);
+  font: 1.375rem/1 var(--vw-font-body);
   cursor: pointer;
-  transition: transform 0.06s, box-shadow 0.06s;
+  transition: transform 0.08s, box-shadow 0.08s, filter 0.12s, border-color 0.12s;
   -webkit-tap-highlight-color: transparent;
 }
 .vw-btn:active { transform: translate(3px, 3px); box-shadow: 0 0 0 var(--vw-ink); }
@@ -167,13 +195,31 @@
   background: linear-gradient(180deg, rgba(255, 113, 206, 0.5), rgba(138, 125, 255, 0.4));
 }
 .vw-btn--icon {
-  width: 40px;
-  min-height: 40px;
+  width: 2.5rem;
+  min-height: 2.5rem;
   padding: 0;
   border-radius: 50%;
-  font-size: 18px;
+  font-size: 1.125rem;
 }
 .vw-btn--block { display: flex; width: 100%; }
+
+/* ---- hover (mouse / trackpad only) ------------------------------------------ */
+@media (hover: hover) and (pointer: fine) {
+  .vw-btn:hover { transform: translate(-1px, -1px); box-shadow: 5px 5px 0 var(--vw-ink); filter: brightness(1.06); }
+  .vw-btn:hover:active { transform: translate(3px, 3px); box-shadow: 0 0 0 var(--vw-ink); }
+  .vw-btn--glass:hover {
+    transform: none;
+    border-color: var(--vw-pink);
+    box-shadow: 0 0 30px rgba(255, 113, 206, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.45);
+    filter: brightness(1.12);
+  }
+  .vw-btn--glass:hover:active { transform: scale(0.98); }
+  .vw-chip:hover { transform: translate(-1px, -1px); box-shadow: 3px 3px 0 var(--vw-ink); filter: brightness(1.06); }
+  .vw-chip:hover:active { transform: translate(2px, 2px); box-shadow: none; }
+  .vw-slider:hover::-webkit-slider-thumb { transform: scale(1.12); background: #fff; box-shadow: 2px 2px 0 var(--vw-ink), 0 0 12px var(--vw-pink); }
+  .vw-slider:hover::-moz-range-thumb { transform: scale(1.12); box-shadow: 0 0 12px var(--vw-pink); }
+  .vw-logo:hover { text-shadow: 3px 3px 0 var(--vw-blue), 0 0 34px var(--vw-pink), 0 0 6px var(--vw-cyan); }
+}
 
 /* ---- slider ----------------------------------------------------------------
    <input class="vw-slider" type="range" style="--fill: 33%">
@@ -182,13 +228,13 @@
   -webkit-appearance: none;
   appearance: none;
   width: 100%;
-  height: 30px;
+  height: 1.875rem;
   margin: 0;
   background: transparent;
   cursor: pointer;
 }
 .vw-slider::-webkit-slider-runnable-track {
-  height: 16px;
+  height: 1rem;
   border: var(--vw-border);
   border-radius: var(--vw-pill);
   background:
@@ -197,24 +243,25 @@
 }
 .vw-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 26px;
-  height: 26px;
-  margin-top: -7px;
+  width: 1.625rem;
+  height: 1.625rem;
+  margin-top: -0.4375rem;
   border: var(--vw-border);
   border-radius: 50%;
   background: var(--vw-cream);
   box-shadow: 2px 2px 0 var(--vw-ink);
+  transition: transform 0.1s;
 }
 .vw-slider::-moz-range-track {
-  height: 12px;
+  height: 0.75rem;
   border: var(--vw-border);
   border-radius: var(--vw-pill);
   background: var(--vw-track);
 }
 .vw-slider::-moz-range-progress { height: 12px; border-radius: var(--vw-pill); background: var(--vw-grad-fill); }
 .vw-slider::-moz-range-thumb {
-  width: 22px;
-  height: 22px;
+  width: 1.375rem;
+  height: 1.375rem;
   border: var(--vw-border);
   border-radius: 50%;
   background: var(--vw-cream);
@@ -225,23 +272,24 @@
 .vw-chip {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 0.375rem;
   flex: none;
-  padding: 3px 10px 3px 4px;
+  padding: 0.1875rem 0.625rem 0.1875rem 0.25rem;
   border: var(--vw-border);
   border-radius: var(--vw-pill);
   background: var(--vw-cream);
   color: var(--vw-ink);
   box-shadow: 2px 2px 0 var(--vw-ink);
-  font: 20px/1 var(--vw-font-body);
+  font: 1.25rem/1 var(--vw-font-body);
+  transition: transform 0.08s, box-shadow 0.08s, filter 0.12s;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
 .vw-chip:active { transform: translate(2px, 2px); box-shadow: none; }
 .vw-chip[aria-pressed="true"] { background: var(--vw-grad-primary); box-shadow: inset 2px 2px 0 rgba(26, 9, 51, 0.35); }
 .vw-chip__swatch {
-  width: 20px;
-  height: 20px;
+  width: 1.25rem;
+  height: 1.25rem;
   border: var(--vw-border);
   border-radius: 50%;
 }
@@ -282,5 +330,6 @@
   z-index: 10;
 }
 @media (prefers-reduced-motion: reduce) {
-  .vw-grid { animation: none; }
+  .vw-grid, .vw-logo--glitch { animation: none; }
+  .vw-btn, .vw-chip { transition: none; }
 }
