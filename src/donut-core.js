@@ -1,4 +1,4 @@
-// The donut engine, shared by the terminal (Node) and the phone (browser).
+// The donut engine, shared by the terminal (Node) and the web app (browser).
 // No Node or DOM APIs in here — just math.
 
 import * as Q from './math.js';
@@ -99,7 +99,6 @@ const FOLLOW_AUTO = 4; // how gently it glides back to auto-spin when tilt stops
 const TILT_ACCEL = 4; // radians per second², for both easing in and easing out
 const TILT_MAX_SPEED = 1.8; // radians per second at 1× speed (the speed slider scales it)
 const SENSOR_SMOOTHING = 18; // filters sensor jitter before motion is planned
-const MIRROR_FOLLOW = 20; // how tightly the terminal tracks the phone's pose
 
 // Phone lying flat → donut seen from straight above (its hole faces you).
 const TOP_DOWN = Q.axisAngle(1, 0, 0, -Math.PI / 2);
@@ -156,11 +155,4 @@ function moveToward(pose, target, dt, maxSpeed) {
   pose.velocity = Math.min(maxSpeed, canStopFrom, pose.velocity + TILT_ACCEL * dt);
   const step = Math.min(dist, pose.velocity * dt);
   pose.current = Q.slerp(pose.current, target, step / dist);
-}
-
-// For a screen that mirrors another device: glide to its pose, absorbing
-// network jitter. Returns a 3×3 matrix for render().
-export function followPose(pose, q, dt) {
-  pose.current = Q.slerp(pose.current, q, 1 - Math.exp(-MIRROR_FOLLOW * dt));
-  return Q.toMatrix(pose.current);
 }

@@ -74,7 +74,6 @@
       text-align: center;
     }
     .masthead .vw-logo { font-size: clamp(26px, 7vmin, 60px); }
-    .linked { margin-top: 0.4rem; display: flex; justify-content: center; align-items: center; gap: 0.4rem; }
     .canvas-wrap { position: relative; z-index: 1; flex: 1; min-height: 0; }
     #stage { position: absolute; inset: 0; width: 100%; height: 100%; }
 
@@ -134,7 +133,6 @@
     <header class="masthead">
       <!-- easter egg: the logo opens the design system -->
       <a class="vw-logo" href="./design-system.html" data-glitch-link>DOUGHNUT3D</a>
-      <div class="linked vw-label" id="linked" hidden><span class="vw-dot vw-dot--on"></span> linked to terminal</div>
     </header>
     <div class="canvas-wrap"><canvas id="stage" aria-label="spinning ASCII donut"></canvas></div>
   </div>
@@ -196,43 +194,9 @@
     const pose = createPose();
     let tiltOn = false;
 
-    // ---- link to the terminal --------------------------------------------------
-    // Opened from the QR code, this page drives your terminal: it sends its pose
-    // and the terminal mirrors it. Opened as a plain website (GitHub Pages)
-    // there's no terminal, so it just plays here.
-    let ws;
-    let everConnected = false;
-
-    function connect() {
-      if (location.hostname.endsWith('github.io')) return;
-      const proto = location.protocol === 'https:' ? 'wss' : 'ws';
-      ws = new WebSocket(`${proto}://${location.host}`);
-      ws.onopen = () => {
-        everConnected = true;
-        $('linked').hidden = false;
-      };
-      ws.onmessage = (e) => {
-        const msg = JSON.parse(e.data);
-        if (msg.t === 'state') {
-          Object.assign(shared, { theme: msg.theme, speed: msg.speed, paused: msg.paused });
-          updateUI();
-        }
-      };
-      ws.onclose = () => {
-        $('linked').hidden = true;
-        if (everConnected) setTimeout(connect, 1000); // no terminal behind this page → stay solo
-      };
-    }
-    connect();
-
-    function send(msg) {
-      if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(msg));
-    }
-
     function change(settings) {
       Object.assign(shared, settings);
       updateUI();
-      send({ t: 'set', ...settings });
     }
 
     // ---- controls ------------------------------------------------------------------
@@ -399,18 +363,11 @@
     resize();
 
     let last = performance.now();
-    let sentAt = 0;
     function frame(now) {
       const dt = Math.min(0.1, (now - last) / 1000);
       last = now;
 
       render(grid, stepPose(pose, dt, shared));
-
-      // Keep the terminal in sync ~30 times a second.
-      if (now - sentAt > 33) {
-        send({ t: 'pose', q: pose.current, tilt: tiltOn });
-        sentAt = now;
-      }
 
       const { width, height } = canvas.getBoundingClientRect();
       ctx.clearRect(0, 0, width, height);

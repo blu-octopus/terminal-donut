@@ -1,45 +1,39 @@
 # How DOUGHNUT3D works (and how to push it further)
 
-This guide explains every layer of the project: the math behind the donut, the motion, how the phone talks to the terminal, and the design system. Each section ends with ideas for improving it. Read it top to bottom once, then use it as a map when you want to change something.
+This guide explains every layer of the project: the math behind the donut, the motion, the inputs, the two renderers and the design system. Each section ends with ideas for improving it. Read it top to bottom once, then use it as a map when you want to change something.
 
 ---
 
 ## 1. The big picture
 
 ```
-                         ┌──────────────── src/donut-core.js ─────────────────┐
-                         │ torus math · rotation · projection · z-buffer ·    │
-                         │ lighting · color themes · motion (pose)            │
-                         └──────────────┬──────────────────────┬──────────────┘
-                                        │ same file, two hosts │
-             ┌──────────────────────────▼──────┐        ┌──────▼──────────────────────────┐
-             │ index.html (phone / browser)    │        │ src/main.js (terminal, Node)    │
-             │ canvas · controls · tilt/mouse  │  pose  │ ANSI 256-color renderer         │
-             │ sounds + haptics (vapor-fx.js)  │ ─────▶ │ keyboard · QR code              │
-             │ vapor.css design system         │ ◀───── │ server.js: http + WebSocket     │
-             └─────────────────────────────────┘ state  └───────────────┬─────────────────┘
-                                                                        │ https tunnel
-                                                               Cloudflare quick tunnel
+                ┌──────────────── src/donut-core.js ─────────────────┐
+                │ torus math · rotation · projection · z-buffer ·    │
+                │ lighting · color themes · motion (pose)            │
+                └──────────┬───────────────────────────┬─────────────┘
+                           │   same file, two hosts    │
+        ┌──────────────────▼──────────────┐  ┌─────────▼───────────────────────┐
+        │ index.html (phone / browser)    │  │ src/main.js (terminal, Node)    │
+        │ canvas · tilt / mouse · UI      │  │ ANSI 256-color renderer         │
+        │ sounds + haptics (vapor-fx.js)  │  │ keyboard controls               │
+        │ vapor.css design system         │  │                                 │
+        └─────────────────────────────────┘  └─────────────────────────────────┘
 ```
 
-There's one engine (`donut-core.js`) and two places that draw it: a `<canvas>` in the browser and ANSI text in a terminal. When a phone is connected, the phone owns the donut's pose (which way it's facing) and the terminal mirrors it. Settings (color, speed, pause) sync both ways.
-
+There's one engine (`donut-core.js`) and two places that draw it: a `<canvas>` in the browser and ANSI text in a terminal. Each one turns its own input (tilt, mouse or keys) into the donut's pose (which way it's facing) and draws it.
 ## 2. Tech stack
 
 | Layer | What | Why this choice |
 |---|---|---|
 | Language | Plain JavaScript (ES modules) | The same file runs in Node and the browser, with no build step |
-| Terminal app | Node.js 18+ | `process.stdout` + ANSI escape codes draw the frames, and raw-mode stdin reads keys |
-| Server | `node:http` + [`ws`](https://github.com/websockets/ws) | A tiny static file server plus a WebSocket for live, two-way messages |
-| Phone link | [Cloudflare quick tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/do-more-with-tunnels/trycloudflare/) (`cloudflared`) | Gives your laptop a temporary **https** URL. Phones only share motion sensors with https pages |
-| QR code | [`qrcode-terminal`](https://github.com/gtanner/qrcode-terminal) | Prints the tunnel URL as a scannable code |
+| Terminal app | Node.js 18+, zero dependencies | `process.stdout` + ANSI escape codes draw the frames, and raw-mode stdin reads keys |
 | Browser rendering | Canvas 2D `fillText` | Draws each character at an exact grid cell, colored per shade |
 | Sensors | [DeviceOrientation API](https://developer.mozilla.org/en-US/docs/Web/API/DeviceOrientationEvent) | Phone tilt angles (beta = forward/back, gamma = left/right) |
 | Sound | [Web Audio API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API) | Synthesizes every sound live, so there are no audio files |
 | Haptics | [Vibration API](https://developer.mozilla.org/en-US/docs/Web/API/Vibration_API) (Android) + native switch trick (iOS 18+) | iPhone Safari has no vibration API |
 | Styling | Hand-written CSS: custom properties, `@property`, `backdrop-filter`, 3D transforms | The whole design system is one stylesheet, `ui/vapor.css` |
 | Fonts | [Silkscreen](https://fonts.google.com/specimen/Silkscreen), [VT323](https://fonts.google.com/specimen/VT323) | Pixel display type and a terminal-style body font |
-| Hosting | GitHub Pages | Free static https hosting; the page runs in "solo mode" with no terminal |
+| Hosting | GitHub Pages | Free static **https** hosting, which phones require before they'll share motion sensors |
 
 There's no framework, no bundler and no build step. Every file you see is exactly what runs.
 
@@ -100,7 +94,7 @@ Everything multiplies by `dt` (seconds since the last frame). Exponential smooth
 ## 5. Input: phone tilt and the mouse
 
 - **Phone:** the `deviceorientation` event gives `beta` and `gamma` in degrees. Two rules make it tricky:
-  1. **Only https pages get sensor data.** That's why the terminal app opens a Cloudflare tunnel, and why GitHub Pages (https) works.
+  1. **Only https pages get sensor data.** GitHub Pages is https, so tilt works there. A local `http://` server doesn't.
   2. **iOS asks permission**, via `DeviceOrientationEvent.requestPermission()`, and only lets you call it from a tap. That's why tilt starts from the START button.
 - **Desktop:** `matchMedia('(hover: hover) and (pointer: fine)')` detects a mouse or trackpad. There, START makes the donut's face follow the cursor: the cursor position becomes fake `beta`/`gamma` values (up to `MOUSE_TILT` = 55° at the window edges) that go through **the exact same `setTilt()` path** as the phone. Different inputs feeding one interface is the "input → state → render" pattern.
 
@@ -111,24 +105,13 @@ Everything multiplies by `dt` (seconds since the last frame). Exponential smooth
 
 ---
 
-## 6. Networking: phone ↔ terminal
+## 6. Retired: the phone ↔ terminal link
 
-`src/server.js` serves a short allow-list of files (nothing else on your laptop is reachable) and upgrades connections to a WebSocket. The protocol is tiny JSON:
+An earlier version let your phone drive the donut in your terminal: the terminal app ran a small Node server with WebSockets ([`ws`](https://github.com/websockets/ws)), opened a [Cloudflare quick tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/do-more-with-tunnels/trycloudflare/) for an https link, and printed it as a QR code. The phone sent its donut pose about 30 times a second and the terminal mirrored it.
 
-| Direction | Message | Meaning |
-|---|---|---|
-| phone → terminal | `{t: 'pose', q: [w,x,y,z], tilt}` | The phone's current donut orientation, ~30 times a second |
-| phone → terminal | `{t: 'set', theme?, speed?, paused?}` | A control changed |
-| terminal → phone | `{t: 'state', theme, speed, paused}` | Current settings (on connect, and after any change) |
+It's retired from this repo to keep the project simple, and saved for a future "phone as a game controller" project. The working version is in git history at commit `0f9cd60`.
 
-The terminal smooths incoming poses slightly (`followPose`) to hide network jitter. If no pose arrives for 1 second (for example, the phone locked), it goes back to its own auto-spin. Opened anywhere without a terminal (GitHub Pages, or a failed first connection), the page just plays solo.
-
-**Why send the pose and not raw sensor angles?** If both sides computed motion separately, tiny timing differences would make them drift apart. Sending the result guarantees both screens match.
-
-**Improve it**
-- **Multiplayer:** several phones, each with its own donut in the terminal.
-- **Permanent URL:** a named Cloudflare tunnel, so the QR code doesn't change every run.
-- **Validation:** the server already ignores malformed messages; add rate limiting if you ever share the link widely.
+The design lesson worth keeping: **send results, not raw inputs.** When two screens show the same thing, let one side own the state and broadcast it, or tiny timing differences make them drift apart.
 
 ---
 
@@ -182,7 +165,7 @@ Every component is shown in [`design-system.html`](../design-system.html). The e
 
 | Symptom | Cause | Lesson |
 |---|---|---|
-| Phone stuck on "reconnecting…" | `npm start` wasn't running, or the phone had an old tunnel link | Every run creates a new URL. Make failure states say *what to do* |
+| Phone stuck on "reconnecting…" (retired link) | `npm start` wasn't running, or the phone had an old tunnel link | Every run created a new URL. Make failure states say *what to do* |
 | Speed slider looked tiny | The empty part of the track was the same dark ink as the glass behind it | Check contrast of every *state* of a control, not just the filled one |
 | Grid floor vanished | The 3D plane was deeper than the CSS perspective distance, so it was culled | CSS 3D has a real camera; stay in front of it |
 | Old styles after editing | Browser cache | Hard refresh (Cmd+Shift+R); GitHub Pages caches for ~10 minutes |

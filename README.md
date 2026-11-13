@@ -28,7 +28,7 @@ A spinning 3D ASCII donut that lives in your terminal **and** in your browser. Y
 - **Real 3D math in plain text:** a torus that's rotated, perspective-projected, z-buffered and lit, drawn as `.,-~:;=!*#$@`.
 - **Tilt to steer:** lay your phone flat for a top-down view, then tilt. The motion eases in, cruises at a capped speed and eases out, with no runaway spin.
 - **Mouse to steer** on desktop: the donut's face follows your cursor.
-- **Phone ↔ terminal sync:** scan a QR code and your phone drives the donut in your terminal. Color and speed sync both ways.
+- **Terminal edition:** the same engine runs in your terminal in 256 colors (`npm start`).
 - **Six color themes** (vapor, pink, sunset, ocean, matcha, mono). The sky gradient and the grid floor change with them.
 - **Vaporwave design system** ([vapor.css](ui/vapor.css)): retro OS windows, glass buttons, pill sliders and pixel type, all scaling with the screen.
 - **Sound bytes** synthesized live with Web Audio, plus **haptic taps** on phones (Android and iOS 18+).
@@ -46,39 +46,32 @@ Add `?theme=ocean` (or `sunset`, `matcha`, `pink`, `mono`) to the URL to start o
 
 ### In your terminal
 
-Requires [Node.js](https://nodejs.org) 18+.
+Requires [Node.js](https://nodejs.org) 18+. There are no dependencies to install.
 
 ```bash
 git clone https://github.com/blu-octopus/terminal-donut.git
 cd terminal-donut
-npm install
 npm start
 ```
 
-1. A QR code appears over the donut. Scan it with your phone's camera. Keep `npm start` running, because every run makes a new link.
-2. Your phone opens the controller. Press **START** and tilt: the terminal mirrors exactly what your phone shows.
-
-Just want the donut, without a phone? Run `npm run donut`.
-
-`npm start` needs Cloudflare's free `cloudflared` tool to give your laptop a temporary https link (phones only share motion sensors with https pages). It looks in `.bin/` (git-ignored) or on your PATH. On an Apple Silicon Mac:
+### Run the web app locally
 
 ```bash
-mkdir -p .bin && curl -fsSL https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-darwin-arm64.tgz | tar -xz -C .bin
+npm run web
 ```
 
-While it's running, anyone with that random link can steer your donut and nothing else. The link closes when you quit.
+Then open http://localhost:8000. Phone tilt needs https, so test tilt on the GitHub Pages link; locally, the mouse works.
 
 ## Controls
 
 | Control | Phone | Desktop | Terminal |
 |---|---|---|---|
-| Start / stop steering | **START** ↔ **AUTO** button | **START** ↔ **AUTO** button | (follows the phone) |
+| Start / stop steering | **START** ↔ **AUTO** button | **START** ↔ **AUTO** button | |
 | Steer | tilt the phone | move the mouse | arrow keys nudge |
 | Speed | slider | slider | `+` / `-` |
 | Pause spin | ❚❚ | ❚❚ | `space` |
 | Color | color chips | color chips | `c` |
 | Sound | (haptics instead) | ♪ | |
-| Show/hide QR code | | | `p` |
 | Quit | | | `q` |
 
 While steering, the speed slider sets the donut's maximum turning speed.
@@ -88,12 +81,11 @@ While steering, the speed slider sets the donut's maximum turning speed.
 ```
                  src/donut-core.js  (shared engine: math, themes, motion)
                     │                                   │
-     index.html (browser/phone)  ── pose ──▶  src/main.js (terminal)
-     canvas · tilt/mouse · UI    ◀─ state ──  ANSI renderer · keys
-                                    WebSocket over a Cloudflare https tunnel
+     index.html (browser / phone)               src/main.js (terminal)
+     canvas · tilt / mouse · UI                 256-color ANSI · keyboard
 ```
 
-One engine file runs in both the browser and Node. The phone computes the donut's orientation (a quaternion), draws it on a canvas, and streams it to the terminal about 30 times a second; the terminal draws the same pose in 256-color ANSI text.
+One engine file runs in both the browser and Node. Each host turns its input (phone tilt, mouse or keys) into the donut's orientation, a quaternion, and draws the result its own way: characters on a canvas, or colored text in a terminal.
 
 **→ Full explanation, including the math, the motion design, the design system, bugs we hit and ideas for what to build next: [docs/HOW-IT-WORKS.md](docs/HOW-IT-WORKS.md)**
 
@@ -102,9 +94,7 @@ One engine file runs in both the browser and Node. The phone computes the donut'
 | | |
 |---|---|
 | Language | Plain JavaScript (ES modules), no framework, no build step |
-| Terminal | Node.js, ANSI escape codes, raw-mode keyboard input |
-| Server | `node:http` + [ws](https://github.com/websockets/ws) WebSockets |
-| Phone link | [Cloudflare quick tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/do-more-with-tunnels/trycloudflare/) + [qrcode-terminal](https://github.com/gtanner/qrcode-terminal) |
+| Terminal | Node.js, ANSI escape codes, raw-mode keyboard input (zero dependencies) |
 | Browser | Canvas 2D, DeviceOrientation API, Web Audio API, Vibration API |
 | Styling | Hand-written CSS (custom properties, `@property`, `backdrop-filter`, 3D transforms) |
 | Hosting | GitHub Pages |
@@ -119,7 +109,6 @@ src/
   math.js             quaternions + tilt conversion
   main.js             terminal app
   renderer.js         terminal (ANSI) drawing
-  server.js           web + WebSocket server, Cloudflare tunnel
 ui/
   vapor.css           vaporwave design system
   vapor-fx.js         synthesized sounds + haptics
@@ -148,8 +137,7 @@ Tokens (`--vw-*`) and components for logo, window, title bar, buttons, slider, c
 | You see | What it means | Fix |
 |---|---|---|
 | **NO ACCESS** on the button | Your browser refused motion access: you tapped "Don't Allow", or the prompt failed | Close the tab and reopen the link, then tap **Allow**. On iPhone you can also clear the site's data (Settings → Apps → Safari → Advanced → Website Data) |
-| **NEEDS HTTPS** on the button | The page was opened over plain http | Use the QR code (`https://…trycloudflare.com`) or the GitHub Pages link |
-| No "linked to terminal" badge on the phone | `npm start` isn't running, or the phone is on an old link | Keep `npm start` running and scan the newest QR code |
+| **NEEDS HTTPS** on the button | The page was opened over plain http, where phones block motion sensors | Use the GitHub Pages link (https) |
 | Old styles after an update | Browser cache | Hard refresh (Cmd+Shift+R). GitHub Pages can take ~10 minutes to update |
 | Donut moves the wrong way | Preference! | Set `TILT_DIRECTION = -1` in [src/math.js](src/math.js) |
 
@@ -165,10 +153,8 @@ Want to build it yourself from scratch? [lessons/](lessons/) builds the donut up
 - **Vaporwave moodboard**: retro OS window kits, Windows 95-era UI and synthwave imagery collected from around the web. The original artists of those reference images are unknown; no assets from them are used here, only the visual direction.
 
 ### Libraries & tools
-- [ws](https://github.com/websockets/ws): WebSocket server for Node.js (MIT)
-- [qrcode-terminal](https://github.com/gtanner/qrcode-terminal): QR codes in the terminal (Apache-2.0)
-- [cloudflared](https://github.com/cloudflare/cloudflared) and [Cloudflare quick tunnels](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/do-more-with-tunnels/trycloudflare/): temporary https links to localhost
 - [Node.js](https://nodejs.org) and [GitHub Pages](https://pages.github.com)
+- An earlier version linked the phone to the terminal over WebSockets. That feature is retired from this repo (it's in git history at `0f9cd60`), and it used [ws](https://github.com/websockets/ws) (MIT), [qrcode-terminal](https://github.com/gtanner/qrcode-terminal) (Apache-2.0) and [Cloudflare quick tunnels](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/do-more-with-tunnels/trycloudflare/) via [cloudflared](https://github.com/cloudflare/cloudflared).
 
 ### Fonts
 - [Silkscreen](https://fonts.google.com/specimen/Silkscreen) by Jason Kottke (SIL Open Font License)
