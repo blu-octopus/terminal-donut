@@ -15,8 +15,15 @@
       --glow: rgba(255, 95, 175, 0.18);
     }
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-    html, body { margin: 0; height: 100%; overflow: hidden; }
+    html, body { margin: 0; overflow: hidden; overscroll-behavior: none; }
+    /* The whole page is exactly one screen tall: donut on top takes whatever
+       the panel doesn't need. Fixed + inset keeps it inside the visible area
+       even while the mobile address bar shows/hides. */
     body {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
       background: var(--bg);
       color: var(--fg);
       font: 15px/1.4 ui-monospace, "SF Mono", Menlo, monospace;
@@ -26,38 +33,39 @@
     }
 
     /* ---- donut stage (top) ---- */
+    .stage {
+      position: relative;
+      flex: 1;
+      min-height: 0;
+    }
+    /* The canvas reaches 36px under the panel so its glass blurs the donut's edge. */
+    .glow, #stage {
+      position: absolute;
+      inset: 0 0 -36px 0;
+      width: 100%;
+      height: calc(100% + 36px);
+    }
     .glow {
-      position: fixed;
-      inset: 0 0 auto 0;
-      height: 64dvh;
       background: radial-gradient(closest-side at 50% 50%, var(--glow), transparent);
       transition: background 0.4s;
-    }
-    #stage {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 64dvh;
     }
 
     /* ---- control panel (bottom, frosted glass over the donut) ---- */
     .panel {
-      position: fixed;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      height: 50dvh;
+      position: relative;
+      z-index: 1;
+      flex: none;
+      max-height: 64%;
       overflow-y: auto;
-      padding: 10px 20px calc(20px + env(safe-area-inset-bottom));
-      border-radius: 28px 28px 0 0;
+      padding: 8px 16px calc(14px + env(safe-area-inset-bottom));
+      border-radius: 24px 24px 0 0;
       border-top: 1px solid var(--line);
       background: rgba(28, 10, 21, 0.55);
       backdrop-filter: blur(18px) saturate(1.4);
       -webkit-backdrop-filter: blur(18px) saturate(1.4);
       display: flex;
       flex-direction: column;
-      gap: 18px;
+      gap: 12px;
     }
     .grabber {
       width: 36px;
@@ -94,9 +102,9 @@
       align-items: center;
       justify-content: space-between;
       gap: 12px;
-      padding: 14px 16px;
+      padding: 10px 14px;
       border: 1px solid var(--line);
-      border-radius: 18px;
+      border-radius: 16px;
       background: rgba(255, 255, 255, 0.03);
     }
     .card .title { font-size: 16px; }
@@ -152,23 +160,34 @@
     input[type="range"]::-moz-range-track { height: 6px; border-radius: 3px; background: rgba(255, 255, 255, 0.14); }
     input[type="range"]::-moz-range-progress { height: 6px; border-radius: 3px; background: var(--accent); }
     input[type="range"]::-moz-range-thumb { width: 26px; height: 26px; border: 0; border-radius: 50%; background: #fff; }
-    #speedValue { font-variant-numeric: tabular-nums; }
+    #speedValue { font-variant-numeric: tabular-nums; min-width: 5ch; text-align: right; font-size: 13px; }
 
-    /* color chips */
-    .chips { display: flex; gap: 8px; flex-wrap: wrap; }
+    /* color chips: one row, scrolls sideways if the screen is narrow */
+    .chips {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      scrollbar-width: none;
+      margin: 0 -16px;
+      padding: 0 16px;
+    }
+    .chips::-webkit-scrollbar { display: none; }
     .chip {
       display: flex;
       align-items: center;
-      gap: 8px;
-      padding: 8px 12px 8px 8px;
+      gap: 6px;
+      flex: none;
+      padding: 6px 10px 6px 6px;
     }
-    .chip .swatch { width: 18px; height: 18px; border-radius: 50%; }
+    .chip .swatch { width: 16px; height: 16px; border-radius: 50%; }
     .chip[aria-pressed="true"] { border-color: var(--fg); background: rgba(255, 255, 255, 0.08); }
   </style>
 </head>
 <body>
-  <div class="glow"></div>
-  <canvas id="stage"></canvas>
+  <div class="stage">
+    <div class="glow"></div>
+    <canvas id="stage"></canvas>
+  </div>
 
   <div class="panel">
     <div class="grabber"></div>
@@ -186,26 +205,22 @@
       <button class="switch" id="tilt" role="switch" aria-checked="false" aria-label="tilt control"></button>
     </div>
 
-    <div>
-      <div class="row">
-        <span class="label">speed</span>
-        <button id="pause">pause</button>
-      </div>
-      <div class="row">
-        <input id="speed" type="range" min="0" max="3" step="0.05" value="1" aria-label="speed">
-        <span id="speedValue">1.0×</span>
-      </div>
+    <div class="row">
+      <span class="label">speed</span>
+      <input id="speed" type="range" min="0" max="3" step="0.05" value="1" aria-label="speed">
+      <span id="speedValue">1.0×</span>
+      <button id="pause">pause</button>
     </div>
 
     <div>
-      <div class="label" style="margin-bottom: 10px">color</div>
+      <div class="label" style="margin-bottom: 8px">color</div>
       <div class="chips" id="chips"></div>
     </div>
   </div>
 
   <script type="module">
     import { THEMES, SHADES, xtermToCss, createGrid, render, createPose, setTilt, stepPose }
-      from '/src/donut-core.js';
+      from './src/donut-core.js';
 
     const $ = (id) => document.getElementById(id);
     const shared = { theme: 0, speed: 1, paused: false };
@@ -213,19 +228,28 @@
     let tiltOn = false;
 
     // ---- connection to the terminal ------------------------------------------
+    // Opened from the QR code, this page talks to your terminal. Opened as a
+    // plain website (e.g. GitHub Pages) there's no terminal, so it plays solo.
     let ws;
     let failures = 0;
+    let everConnected = false;
 
     function setStatus(text, kind) {
       $('status').textContent = text;
       $('dot').className = 'dot ' + (kind || '');
     }
 
+    function goSolo() {
+      setStatus('solo mode', 'ok');
+    }
+
     function connect() {
+      if (location.hostname.endsWith('github.io')) return goSolo();
       const proto = location.protocol === 'https:' ? 'wss' : 'ws';
       ws = new WebSocket(`${proto}://${location.host}`);
       ws.onopen = () => {
         failures = 0;
+        everConnected = true;
         setStatus('connected to your terminal', 'ok');
       };
       ws.onmessage = (e) => {
@@ -238,6 +262,7 @@
         }
       };
       ws.onclose = () => {
+        if (!everConnected) return goSolo(); // no terminal behind this page
         failures++;
         if (failures < 4) setStatus('reconnecting…');
         else setStatus("can't reach your laptop. is npm start running? rescan the new QR", 'bad');

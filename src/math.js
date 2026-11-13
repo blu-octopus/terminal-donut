@@ -61,8 +61,9 @@ export function fromDeviceOrientation(alpha, beta, gamma) {
   );
 }
 
-// The phone's z axis points out of the screen toward you; the renderer's z
-// points into the screen. Mirroring z turns a phone rotation into a scene one.
+// Maps a phone rotation onto the donut. Tilting forward/back and left/right
+// pass straight through, so the donut leans the way the phone leans as you
+// look down at it.
 export function phoneToScene([w, x, y, z]) {
-  return [w, -x, -y, z];
+  return [w, x, y, z];
 }

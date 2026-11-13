@@ -23,6 +23,14 @@ npm start
 
 Just want the donut? Run `npm run donut`.
 
+## Play it in the browser (no terminal)
+
+The phone controller is also a standalone website: **https://blu-octopus.github.io/terminal-donut/**
+
+Opened there, it runs in solo mode. The donut, tilt, speed and colors all work on the phone by themselves. It's served over https by GitHub Pages, so motion sensors are allowed.
+
+To publish it (one-time setup): push to `main`, then go to **Settings → Pages → Build and deployment**, choose **Deploy from a branch**, then **main** and **/ (root)**, and save. Every push to `main` updates the site.
+
 ### Keys
 
 | key | does |
@@ -50,7 +58,7 @@ Just want the donut? Run `npm run donut`.
 - **[src/math.js](src/math.js)**: quaternions turn your phone's tilt into a rotation that never glitches or flips, and blend smoothly between poses.
 - **[src/server.js](src/server.js)**: a tiny web and WebSocket server, plus a free [Cloudflare quick tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/do-more-with-tunnels/trycloudflare/). Phones only share motion sensors with **https** pages, which is why the tunnel is needed.
 - **[src/donut-core.js](src/donut-core.js)**: the shared engine (rendering, color themes, motion). The terminal and the phone both run this same file, so they always match.
-- **[public/phone.html](public/phone.html)**: the controller your phone opens. It draws the donut on a canvas from its own sensor, so there's no lag, and sends settings back to the terminal.
+- **[index.html](index.html)**: the controller your phone opens. It draws the donut on a canvas from its own sensor, so there's no lag, and sends settings back to the terminal.
 - **[src/main.js](src/main.js)**: the terminal app: loop, keyboard controls and state syncing. Motion "feel" constants (`FOLLOW_PHONE`, `SPIN_A` and others) live in donut-core.js.
 
 ### The tunnel binary

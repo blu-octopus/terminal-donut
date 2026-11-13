@@ -12,7 +12,8 @@ const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 
 // The only files the phone may load. The engine modules are shared with the terminal.
 const FILES = {
-  '/': ['public/phone.html', 'text/html; charset=utf-8'],
+  '/': ['index.html', 'text/html; charset=utf-8'],
+  '/index.html': ['index.html', 'text/html; charset=utf-8'],
   '/src/math.js': ['src/math.js', 'text/javascript'],
   '/src/donut-core.js': ['src/donut-core.js', 'text/javascript'],
 };
