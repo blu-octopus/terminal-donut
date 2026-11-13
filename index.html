@@ -187,7 +187,10 @@
 
     // Desktop (mouse/trackpad): the mouse tilts the donut, and buttons make sounds.
     // Phone: the phone itself tilts the donut, and buttons buzz.
-    const desktop = matchMedia('(hover: hover) and (pointer: fine)').matches;
+    // ?input=tilt forces phone-tilt mode on any device (for testing with DevTools
+    // sensor emulation, and for the demo recorder in tools/).
+    const desktop = matchMedia('(hover: hover) and (pointer: fine)').matches &&
+      new URLSearchParams(location.search).get('input') !== 'tilt';
 
     function feedback(sound, arg) {
       if (desktop) sfx.play(sound, arg);
@@ -458,9 +461,9 @@
         const arrow = arrows[dir].arrow;
         let on, power;
         if (lockedDir) {
-          // A selected arrow owns the HUD: only it lights, at a steady glow.
+          // A selected arrow owns the HUD: only it lights, at full steady glow.
           on = dir === lockedDir;
-          power = 0.6;
+          power = 1;
         } else {
           const wasOn = arrow.classList.contains('is-active');
           on = push[dir] > (wasOn ? ARROW_OFF : ARROW_ON) || (wasOn && performance.now() - arrow.litAt < MIN_LIT_MS);

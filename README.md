@@ -4,6 +4,10 @@ A spinning 3D ASCII donut that lives in your terminal **and** in your browser. Y
 
 **▶ Play it:** https://blu-octopus.github.io/terminal-donut/
 
+<p align="center">
+  <img src="docs/media/doughnut3d-mobile.gif" alt="DOUGHNUT3D on a phone: the donut spins, arrow taps lock its direction, and the theme changes from vapor to ocean to sunset" width="320">
+</p>
+
 ![DOUGHNUT3D on desktop: the ASCII donut floats above a synthwave grid floor, with a glass control panel below](docs/screenshots/desktop.png)
 
 <table>
@@ -116,6 +120,16 @@ ui/
   vapor-fx.js         synthesized sounds + haptics
 lessons/              step-by-step build-up of the donut (npm run step1…5)
 docs/                 HOW-IT-WORKS guide + screenshots
+```
+
+### Record a promo clip
+
+[tools/demo-stage.html](tools/demo-stage.html) is a 16:9 stage with a 3D phone that tilts on a seamless loop while the real app inside follows along. To re-record [docs/media/doughnut3d-x.gif](docs/media/doughnut3d-x.gif) (needs Chrome and Python's Pillow):
+
+```bash
+npm run web            # in one terminal
+npm run demo:record    # in another: captures one 11.2 s loop
+npm run demo:gif       # builds the GIF (1120×630, under X's 15 MB limit)
 ```
 
 ### Tweak the feel

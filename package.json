@@ -11,7 +11,9 @@
     "step4": "node lessons/04-spin.js",
     "step5": "node lessons/05-donut.js",
     "start": "node src/main.js",
-    "web": "python3 -m http.server 8000"
+    "web": "python3 -m http.server 8000",
+    "demo:record": "node --experimental-websocket tools/record-demo.mjs .demo-frames",
+    "demo:gif": "python3 tools/make-gif.py .demo-frames docs/media/doughnut3d-x.gif 1120 256 global"
   },
   "engines": {
     "node": ">=18"

@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=1280, height=720">
+  <title>DOUGHNUT3D demo stage</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Silkscreen&family=VT323&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../ui/vapor.css">
+  <style>
+    /* A 16:9 stage for recording promo clips: a 3D phone, centered, running the
+       real app. The phone tilts on a loop and the app inside receives the same
+       tilt as DeviceOrientation events, so the donut follows the phone.
+       Record it with tools/record-demo.mjs. */
+    @property --sky-1 { syntax: '<color>'; inherits: true; initial-value: #36055e; }
+    @property --sky-2 { syntax: '<color>'; inherits: true; initial-value: #8700d7; }
+    @property --sky-3 { syntax: '<color>'; inherits: true; initial-value: #ff5fd7; }
+    @property --vw-grid-line { syntax: '<color>'; inherits: true; initial-value: #ff71ce; }
+    @property --glow { syntax: '<color>'; inherits: true; initial-value: #af00d7; }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; width: 1280px; height: 720px; overflow: hidden; }
+    body {
+      background: linear-gradient(180deg,
+        var(--vw-night) 0%,
+        color-mix(in srgb, var(--sky-1) 55%, var(--vw-night)) 40%,
+        var(--sky-2) 82%,
+        var(--sky-3) 130%);
+    }
+    .vw-grid { height: 46%; opacity: 0.38; }
+    .halo {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(closest-side at 50% 48%, color-mix(in srgb, var(--glow) 55%, transparent), transparent 70%);
+    }
+
+    /* ---- the phone ---- */
+    .scene {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      perspective: 1500px;
+      perspective-origin: 50% 45%;
+    }
+    .shadow {
+      position: absolute;
+      left: 50%;
+      top: 650px;
+      width: 260px;
+      height: 34px;
+      margin-left: -130px;
+      border-radius: 50%;
+      background: radial-gradient(closest-side, rgba(0, 0, 0, 0.55), transparent);
+      transform: translateX(var(--shadow-x, 0px)) scaleX(var(--shadow-w, 1));
+      filter: blur(4px);
+    }
+    .phone {
+      position: relative;
+      width: 300px;
+      height: 620px;
+      margin-top: -22px;
+      transform-style: preserve-3d;
+      transform: rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+    }
+    .phone > * { position: absolute; inset: 0; border-radius: 48px; }
+    /* side edge: a slightly smaller slab pushed back, gives the body thickness */
+    .phone__edge {
+      transform: translateZ(-14px);
+      background: linear-gradient(145deg, #4a3d6e, #120c22 60%);
+      box-shadow: 0 30px 60px rgba(0, 0, 0, 0.45);
+    }
+    .phone__body {
+      background: linear-gradient(145deg, #3a3058, #0d0918 70%);
+      box-shadow:
+        inset 0 0 0 2px rgba(255, 244, 251, 0.22),
+        inset 0 0 0 10px #06040c,
+        0 0 40px color-mix(in srgb, var(--glow) 40%, transparent);
+    }
+    .phone__screen {
+      inset: 12px;
+      border-radius: 37px;
+      overflow: hidden;
+      background: #000;
+    }
+    .phone__screen iframe {
+      width: 390px;
+      height: 844px;
+      border: 0;
+      transform: scale(calc(276 / 390));
+      transform-origin: 0 0;
+      pointer-events: none;
+    }
+    /* glass glare that slides as the phone turns */
+    .phone__glare {
+      inset: 12px;
+      border-radius: 37px;
+      background: linear-gradient(115deg,
+        transparent calc(30% + var(--glare, 0%)),
+        rgba(255, 255, 255, 0.10) calc(42% + var(--glare, 0%)),
+        transparent calc(54% + var(--glare, 0%)));
+      pointer-events: none;
+    }
+
+    .credit {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 22px;
+      text-align: center;
+    }
+    .credit .vw-caption { font-size: 13px; }
+  </style>
+</head>
+<body>
+  <div class="halo"></div>
+  <div class="vw-grid"></div>
+  <div class="scene">
+    <div class="shadow"></div>
+    <div class="phone">
+      <div class="phone__edge"></div>
+      <div class="phone__body"></div>
+      <div class="phone__screen"><iframe id="app" src="../index.html?theme=vapor&input=tilt"></iframe></div>
+      <div class="phone__glare"></div>
+    </div>
+  </div>
+  <div class="credit"><span class="vw-caption">DOUGHNUT3D · tilt to steer · <b>blu-octopus.github.io/terminal-donut</b></span></div>
+  <div class="vw-scanlines" style="opacity: 0.6"></div>
+
+  <script type="module">
+    // One loop = LOOP seconds. 11.2 s divides evenly into the grid floor's 1.6 s
+    // scroll and the arrows' 1.4 s breathing, so the clip loops seamlessly.
+    const LOOP = 11.2;
+    const TILT_X = 22; // degrees, front/back
+    const TILT_Y = 30; // degrees, left/right
+    const THEMES = [[0, 'vapor'], [3.6, 'ocean'], [7.2, 'sunset'], [10.2, 'vapor']];
+    // Signs that make the CSS phone turn the same way the app turns the donut:
+    // the app tips the donut's top away for +beta and brings its right side
+    // toward you for +gamma; CSS needs rotateX(+beta) and rotateY(-gamma) for that.
+    const PHONE_SIGN = { x: 1, y: -1 };
+
+    const frame = document.getElementById('app');
+    const phone = document.querySelector('.phone');
+    const root = document.documentElement.style;
+    let app = null;
+    let theme = null;
+
+    frame.addEventListener('load', () => {
+      const win = frame.contentWindow;
+      // The app asks permission before reading motion; grant it, then press START.
+      win.DeviceOrientationEvent.requestPermission = async () => 'granted';
+      setTimeout(() => {
+        win.document.getElementById('start').click();
+        app = win;
+      }, 300);
+    });
+
+    const hold = new URLSearchParams(location.search).get('hold')?.split(',').map(Number);
+    const t0 = performance.now();
+    // Wall-clock start, so the recorder can map its frame timestamps onto loop time.
+    window.stageStartEpoch = Date.now();
+    function tick(now) {
+      const t = ((now - t0) / 1000) % LOOP;
+      // A figure-8: left/right twice per loop, front/back once.
+      let gamma = TILT_Y * Math.sin((2 * Math.PI * t) / (LOOP / 2));
+      let beta = TILT_X * Math.sin((2 * Math.PI * t) / LOOP);
+      if (hold) [beta, gamma] = hold; // ?hold=beta,gamma freezes one pose (for checking directions)
+
+      root.setProperty('--rx', `${PHONE_SIGN.x * beta}deg`);
+      root.setProperty('--ry', `${PHONE_SIGN.y * gamma}deg`);
+      root.setProperty('--glare', `${gamma * 0.8}%`);
+      root.setProperty('--shadow-x', `${gamma * -2.2}px`);
+      root.setProperty('--shadow-w', `${1 - Math.abs(beta) / 120}`);
+
+      if (app) {
+        app.dispatchEvent(new app.DeviceOrientationEvent('deviceorientation', { alpha: 0, beta, gamma }));
+        const want = THEMES.filter(([at]) => t >= at).pop()[1];
+        if (want !== theme) {
+          theme = want;
+          [...app.document.querySelectorAll('.vw-chip')].find((c) => c.textContent.trim() === want)?.click();
+        }
+        // Mirror the app's (animated) sky colors onto the stage.
+        const cs = app.getComputedStyle(app.document.body);
+        for (const v of ['--sky-1', '--sky-2', '--sky-3', '--vw-grid-line']) root.setProperty(v, cs.getPropertyValue(v));
+        root.setProperty('--glow', cs.getPropertyValue('--sky-3'));
+      }
+      requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  </script>
+</body>
+</html>

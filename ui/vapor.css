@@ -346,7 +346,9 @@
 
 /* ---- arrow buttons ------------------------------------------------------------
    A clickable .vw-arrow (createArrowButton() in vapor-arrows.js).
-   aria-pressed="true" marks the selected direction.                             */
+   aria-pressed="true" marks the selected direction: no border, just a steady
+   full-power glow, a slightly bigger arrow, and the other arrows in the same
+   group dimmed so the selection is unmistakable.                               */
 .vw-arrow-btn {
   appearance: none;
   display: inline-grid;
@@ -358,15 +360,14 @@
   cursor: pointer;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
-  transition: background 0.2s, box-shadow 0.2s;
+  transition: opacity 0.25s;
 }
 .vw-arrow-btn:focus-visible { outline: 2px dashed var(--vw-cyan); outline-offset: 2px; }
 .vw-arrow-btn .vw-arrow { transition: transform 0.08s; }
 .vw-arrow-btn:active .vw-arrow { transform: scale(0.9); }
-.vw-arrow-btn[aria-pressed="true"] {
-  background: color-mix(in srgb, var(--vw-arrow-glow, var(--vw-pink)) 14%, transparent);
-  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--vw-arrow-glow, var(--vw-pink)) 55%, transparent);
-}
+.vw-arrow-btn[aria-pressed="true"] .vw-arrow svg { --grow: 1.15; }
+.vw-arrow-btn[aria-pressed="true"] .vw-arrow g { animation: none; } /* held = steady, not breathing */
+:has(> .vw-arrow-btn[aria-pressed="true"]) > .vw-arrow-btn[aria-pressed="false"] { opacity: 0.4; }
 @media (hover: hover) and (pointer: fine) {
   .vw-arrow-btn:hover { --vw-arrow-off: color-mix(in srgb, var(--vw-arrow-to, var(--vw-pink)) 45%, transparent); }
 }
