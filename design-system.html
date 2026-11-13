@@ -46,6 +46,7 @@
     <!-- tap the logo to go back to the donut -->
     <h1><a class="vw-logo" href="./index.html" data-glitch-link>vapor.css</a></h1>
     <p>the tiny design system behind donut.exe</p>
+    <p style="margin-top: 12px"><a class="vw-caption" href="https://github.com/blu-octopus/terminal-donut" target="_blank" rel="noopener">made by <b>blu-octopus</b> · source ↗</a></p>
   </header>
 
   <main>
@@ -129,6 +130,38 @@
 
     <section class="vw-window">
       <header class="vw-titlebar">
+        <span class="vw-titlebar__title">arrows.hud</span>
+        <span class="vw-titlebar__ctl" aria-hidden="true"><i>_</i><i>□</i><i>×</i></span>
+      </header>
+      <div class="vw-window__body" style="background: var(--vw-night); display: grid; gap: 18px">
+        <div class="stack" style="justify-content: space-between">
+          <span class="vw-label" style="width: 5rem">inactive</span>
+          <div class="stack" id="arrows-off" style="gap: 24px"></div>
+        </div>
+        <div class="stack" style="justify-content: space-between">
+          <span class="vw-label" style="width: 5rem">active</span>
+          <div class="stack" id="arrows-on" style="gap: 24px"></div>
+        </div>
+        <div class="stack" style="justify-content: space-between">
+          <span class="vw-label" style="width: 5rem">buttons</span>
+          <div class="stack" id="arrows-btn" style="gap: 12px"></div>
+        </div>
+        <p class="note">--power 0.2 → 1 (left to right): stronger push, brighter glow. Buttons: tap to select one direction (aria-pressed), tap again to release</p>
+      </div>
+    </section>
+
+    <section class="vw-window">
+      <header class="vw-titlebar">
+        <span class="vw-titlebar__title">arrows.themes</span>
+        <span class="vw-titlebar__ctl" aria-hidden="true"><i>_</i><i>□</i><i>×</i></span>
+      </header>
+      <div class="vw-window__body" style="background: var(--vw-night); display: grid; gap: 14px" id="arrow-themes">
+        <p class="note">applyArrowTheme(el, palette): each donut theme's colors, inactive + active</p>
+      </div>
+    </section>
+
+    <section class="vw-window">
+      <header class="vw-titlebar">
         <span class="vw-titlebar__title">logo.bmp</span>
         <span class="vw-titlebar__ctl" aria-hidden="true"><i>_</i><i>□</i><i>×</i></span>
       </header>
@@ -138,11 +171,59 @@
     </section>
 
     <p class="note">sound + haptics: ui/vapor-fx.js → sfx.play('click' | 'select' | 'tick' | 'start' | 'stop' | 'glitch'), haptic()</p>
-    <p class="note">components: .vw-logo (+ --glitch) · .vw-window (+ --glass) · .vw-titlebar · .vw-btn (--primary, --hot, --glass, --icon, --block) · .vw-slider · .vw-chip · .vw-label · .vw-dot · .vw-sky · .vw-grid · .vw-scanlines</p>
+    <p class="note">components: .vw-caption · .vw-arrow-btn · .vw-arrow (--up/--down/--left/--right, .is-active, --power, themeable via --vw-arrow-* or applyArrowTheme()) · .vw-logo (+ --glitch) · .vw-window (+ --glass) · .vw-titlebar · .vw-btn (--primary, --hot, --glass, --icon, --block) · .vw-slider · .vw-chip · .vw-label · .vw-dot · .vw-sky · .vw-grid · .vw-scanlines</p>
   </main>
   <div class="vw-scanlines"></div>
   <script type="module">
     import { sfx, haptic } from './ui/vapor-fx.js';
+    import { createArrow, createArrowButton, applyArrowTheme } from './ui/vapor-arrows.js';
+    import { THEMES, xtermToCss } from './src/donut-core.js';
+
+    ['left', 'up', 'down', 'right'].forEach((dir, i) => {
+      document.getElementById('arrows-off').append(createArrow(dir));
+      const lit = createArrow(dir);
+      lit.classList.add('is-active');
+      lit.style.setProperty('--power', [0.2, 0.45, 0.7, 1][i]);
+      document.getElementById('arrows-on').append(lit);
+    });
+
+    // Clickable arrow buttons: one can be selected at a time.
+    const buttons = ['left', 'up', 'down', 'right'].map((dir, i) => {
+      const btn = createArrowButton(dir, `select ${dir}`);
+      btn.addEventListener('click', () => {
+        const on = btn.getAttribute('aria-pressed') !== 'true';
+        buttons.forEach((b) => {
+          b.setAttribute('aria-pressed', b === btn && on);
+          b.arrow.classList.toggle('is-active', b === btn && on);
+        });
+        feedback(on ? 'select' : 'stop', i);
+      });
+      document.getElementById('arrows-btn').append(btn);
+      return btn;
+    });
+    buttons[3].setAttribute('aria-pressed', 'true'); // start with "right" selected
+    buttons[3].arrow.classList.add('is-active');
+
+    // One row per donut theme: a dim arrow, then four lit ones at rising power.
+    for (const theme of THEMES) {
+      const row = document.createElement('div');
+      row.className = 'stack';
+      row.style.justifyContent = 'space-between';
+      row.innerHTML = `<span class="vw-label" style="width: 5rem">${theme.name}</span>`;
+      const arrows = document.createElement('div');
+      arrows.className = 'stack';
+      arrows.style.gap = '24px';
+      arrows.append(createArrow('right'));
+      ['left', 'up', 'down', 'right'].forEach((dir, i) => {
+        const lit = createArrow(dir);
+        lit.classList.add('is-active');
+        lit.style.setProperty('--power', [0.3, 0.55, 0.8, 1][i]);
+        arrows.append(lit);
+      });
+      applyArrowTheme(arrows, theme.colors.map(xtermToCss));
+      row.append(arrows);
+      document.getElementById('arrow-themes').append(row);
+    }
     const desktop = matchMedia('(hover: hover) and (pointer: fine)').matches;
     const feedback = (sound, arg) => (desktop ? sfx.play(sound, arg) : haptic());
 

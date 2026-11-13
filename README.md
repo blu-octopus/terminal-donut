@@ -27,9 +27,10 @@ A spinning 3D ASCII donut that lives in your terminal **and** in your browser. Y
 
 - **Real 3D math in plain text:** a torus that's rotated, perspective-projected, z-buffered and lit, drawn as `.,-~:;=!*#$@`.
 - **Tilt to steer:** lay your phone flat for a top-down view, then tilt. The motion eases in, cruises at a capped speed and eases out, with no runaway spin.
-- **Mouse to steer** on desktop: the donut's face follows your cursor.
+- **Mouse joystick** on desktop: move the cursor away from the center and the donut keeps turning that way. Further out means faster, up to a capped speed, and the center means stop.
+- **Racing-game HUD:** four pixel arrows light up with the direction the donut is moving, glowing harder the faster it turns. They take on the theme's colors. Tap an arrow to lock the donut into turning only that way.
 - **Terminal edition:** the same engine runs in your terminal in 256 colors (`npm start`).
-- **Six color themes** (vapor, pink, sunset, ocean, matcha, mono). The sky gradient and the grid floor change with them.
+- **Six color themes** (vapor, pink, sunset, ocean, matcha, mono). The sky gradient, grid floor and HUD arrows change with them.
 - **Vaporwave design system** ([vapor.css](ui/vapor.css)): retro OS windows, glass buttons, pill sliders and pixel type, all scaling with the screen.
 - **Sound bytes** synthesized live with Web Audio, plus **haptic taps** on phones (Android and iOS 18+).
 - **Easter egg:** tap the DOUGHNUT3D logo.
@@ -40,7 +41,7 @@ A spinning 3D ASCII donut that lives in your terminal **and** in your browser. Y
 
 Open **https://blu-octopus.github.io/terminal-donut/** and press **START**:
 - **Phone:** tap **Allow** for motion access, lay the phone flat, then tilt.
-- **Desktop:** move your mouse. The ♪ button toggles sound.
+- **Desktop:** move the cursor away from the center to steer; it keeps turning until you come back to the middle. The ♪ button toggles sound.
 
 Add `?theme=ocean` (or `sunset`, `matcha`, `pink`, `mono`) to the URL to start on a different color.
 
@@ -67,7 +68,8 @@ Then open http://localhost:8000. Phone tilt needs https, so test tilt on the Git
 | Control | Phone | Desktop | Terminal |
 |---|---|---|---|
 | Start / stop steering | **START** ↔ **AUTO** button | **START** ↔ **AUTO** button | |
-| Steer | tilt the phone | move the mouse | arrow keys nudge |
+| Steer | tilt the phone | cursor off-center = keep turning that way | arrow keys nudge |
+| Lock one direction | tap an arrow (tap again to release) | click an arrow | |
 | Speed | slider | slider | `+` / `-` |
 | Pause spin | ❚❚ | ❚❚ | `space` |
 | Color | color chips | color chips | `c` |
@@ -122,6 +124,7 @@ All in [src/donut-core.js](src/donut-core.js):
 - `TILT_ACCEL`: how quickly it speeds up and slows down
 - `TILT_MAX_SPEED`: top turning speed
 - `SENSOR_SMOOTHING`: how much sensor jitter is filtered out
+- `JOY_MAX_SPEED` / `JOY_EASE`: mouse joystick top speed and how quickly it gets there
 - `SPIN_A` / `SPIN_B`: auto-spin speeds
 
 If tilting feels backwards, set `TILT_DIRECTION = -1` in [src/math.js](src/math.js).
@@ -130,7 +133,7 @@ If tilting feels backwards, set `TILT_DIRECTION = -1` in [src/math.js](src/math.
 
 ![The vapor.css design system page: color swatches, type, buttons, glass components and logo](docs/screenshots/design-system.png)
 
-Tokens (`--vw-*`) and components for logo, window, title bar, buttons, slider, chips, labels, status dot, sky, grid floor and scanlines, plus [vapor-fx.js](ui/vapor-fx.js) for sounds and haptics. Everything is sized in `rem`, so a page can scale the whole system with one root font size. Browse it at [design-system.html](design-system.html), or tap the logo on the donut page.
+Tokens (`--vw-*`) and components for logo, direction arrows, window, title bar, buttons, slider, chips, labels, status dot, sky, grid floor and scanlines, plus [vapor-fx.js](ui/vapor-fx.js) for sounds and haptics. Everything is sized in `rem`, so a page can scale the whole system with one root font size. Browse it at [design-system.html](design-system.html), or tap the logo on the donut page.
 
 ## Troubleshooting
 

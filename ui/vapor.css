@@ -294,6 +294,104 @@
   border-radius: 50%;
 }
 
+/* ---- arrows ------------------------------------------------------------------
+   Pixel double-chevron direction indicators (markup from ui/vapor-arrows.js).
+   .vw-arrow--up / --down / --left / --right   which way it points
+   .is-active                                  lit: gradient, glitch glow, flowing chevrons
+   --power: 0…1                                how hard an active arrow pushes forward
+
+   Color tokens: set them on the arrow or any parent to retheme (applyArrowTheme()
+   in vapor-arrows.js derives all five from a 12-step palette):
+   --vw-arrow-from / --vw-arrow-to   gradient, tail → tip
+   --vw-arrow-glow                   neon glow
+   --vw-arrow-ghost-1 / -2           left / right glitch ghosts
+   --vw-arrow-off                    inactive fill                                     */
+.vw-arrow {
+  --power: 1;
+  --rot: 0deg;
+  display: inline-block;
+  width: 2.75rem;
+  height: 2.75rem;
+  flex: none;
+}
+.vw-arrow--down { --rot: 90deg; }
+.vw-arrow--left { --rot: 180deg; }
+.vw-arrow--up { --rot: -90deg; }
+.vw-arrow svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  transform: rotate(var(--rot)) translateX(var(--nudge, 0px)) scale(var(--grow, 1));
+  transition: transform 0.18s ease-out, filter 0.18s ease-out;
+}
+.vw-arrow:not(.is-active) g { fill: var(--vw-arrow-off, rgba(201, 179, 255, 0.16)); transition: fill 0.4s; }
+.vw-arrow.is-active svg {
+  --nudge: calc(var(--power) * 0.3rem);
+  --grow: calc(1 + var(--power) * 0.08);
+  /* chromatic-aberration glitch: two colored ghosts, plus neon glow */
+  filter:
+    drop-shadow(-1.5px 0 0 var(--vw-arrow-ghost-1, var(--vw-cyan)))
+    drop-shadow(1.5px 0 0 var(--vw-arrow-ghost-2, var(--vw-hot)))
+    drop-shadow(0 0 calc(4px + var(--power) * 10px) var(--vw-arrow-glow, var(--vw-pink)));
+}
+/* A gentle breathing flow, tail then tip. The tempo is fixed on purpose: tying it
+   to --power (which changes every frame) restarts the cycle and makes it flicker. */
+.vw-arrow.is-active .vw-arrow__tail,
+.vw-arrow.is-active .vw-arrow__tip {
+  animation: vw-arrow-flow 1.4s ease-in-out infinite;
+}
+.vw-arrow.is-active .vw-arrow__tip { animation-delay: 0.35s; }
+@keyframes vw-arrow-flow { 50% { opacity: 0.72; } }
+
+/* ---- arrow buttons ------------------------------------------------------------
+   A clickable .vw-arrow (createArrowButton() in vapor-arrows.js).
+   aria-pressed="true" marks the selected direction.                             */
+.vw-arrow-btn {
+  appearance: none;
+  display: inline-grid;
+  place-items: center;
+  padding: 0.375rem;
+  border: 0;
+  border-radius: var(--vw-radius-sm);
+  background: transparent;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.2s, box-shadow 0.2s;
+}
+.vw-arrow-btn:focus-visible { outline: 2px dashed var(--vw-cyan); outline-offset: 2px; }
+.vw-arrow-btn .vw-arrow { transition: transform 0.08s; }
+.vw-arrow-btn:active .vw-arrow { transform: scale(0.9); }
+.vw-arrow-btn[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--vw-arrow-glow, var(--vw-pink)) 14%, transparent);
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--vw-arrow-glow, var(--vw-pink)) 55%, transparent);
+}
+@media (hover: hover) and (pointer: fine) {
+  .vw-arrow-btn:hover { --vw-arrow-off: color-mix(in srgb, var(--vw-arrow-to, var(--vw-pink)) 45%, transparent); }
+}
+
+/* ---- caption ------------------------------------------------------------------
+   <a class="vw-caption" href="…">made by <b>blu-octopus</b> ↗</a>
+   Tiny pixel credit line / link. <b> picks out the name in pink.                */
+.vw-caption {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+  font: 0.625rem/1 var(--vw-font-display);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--vw-text-dim);
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: color 0.15s, text-shadow 0.15s;
+}
+.vw-caption b { font-weight: normal; color: var(--vw-pink); }
+a.vw-caption:focus-visible { outline: 2px dashed var(--vw-cyan); outline-offset: 3px; }
+@media (hover: hover) and (pointer: fine) {
+  a.vw-caption:hover { color: var(--vw-cream); text-shadow: 0 0 10px var(--vw-pink); }
+}
+
 /* ---- status dot ------------------------------------------------------------- */
 .vw-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--vw-sun); }
 .vw-dot--on { background: var(--vw-mint); box-shadow: 0 0 6px var(--vw-mint); }
@@ -347,6 +445,6 @@
   z-index: 10;
 }
 @media (prefers-reduced-motion: reduce) {
-  .vw-grid::before, .vw-logo--glitch { animation: none; }
-  .vw-btn, .vw-chip { transition: none; }
+  .vw-grid::before, .vw-logo--glitch, .vw-arrow g { animation: none !important; }
+  .vw-btn, .vw-chip, .vw-arrow-btn { transition: none; }
 }

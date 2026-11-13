@@ -23,7 +23,7 @@ export function conj([w, x, y, z]) {
   return [w, -x, -y, -z];
 }
 
-function normalize(q) {
+export function normalize(q) {
   const len = Math.hypot(...q);
   return q.map((v) => v / len);
 }

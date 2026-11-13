@@ -100,6 +100,12 @@ const TILT_ACCEL = 4; // radians per second², for both easing in and easing out
 const TILT_MAX_SPEED = 1.8; // radians per second at 1× speed (the speed slider scales it)
 const SENSOR_SMOOTHING = 18; // filters sensor jitter before motion is planned
 
+// Joystick feel (mouse). The input sets a turning *rate*, not a pose: the donut
+// eases up to that rate and holds it for as long as the input is held, so it
+// keeps moving but never keeps speeding up.
+const JOY_MAX_SPEED = 2.4; // radians per second at full deflection, 1× speed
+const JOY_EASE = 4; // how quickly the rate catches up to the stick (higher = snappier)
+
 // Phone lying flat → donut seen from straight above (its hole faces you).
 const TOP_DOWN = Q.axisAngle(1, 0, 0, -Math.PI / 2);
 
@@ -111,6 +117,8 @@ export function createPose() {
     tilt: null, // where the phone points (scene space), or null when tilt is off
     smoothTilt: null,
     velocity: 0, // radians per second, while following tilt
+    joystick: null, // { x, y } in -1…1 while steering by rate, else null
+    spin: { x: 0, y: 0 }, // current joystick turning rate, radians per second
   };
 }
 
@@ -118,10 +126,18 @@ export function setTilt(pose, beta, gamma) {
   pose.tilt = Q.phoneToScene(Q.fromTilt(beta, gamma));
 }
 
+// Joystick steering: x = right, y = up, each -1…1 (0 = hold still).
+export function setJoystick(pose, x, y) {
+  pose.joystick = { x, y };
+}
+
+// Hands the donut back to auto-spin (from either tilt or joystick).
 export function clearTilt(pose) {
   pose.tilt = null;
   pose.smoothTilt = null;
   pose.velocity = 0;
+  pose.joystick = null;
+  pose.spin = { x: 0, y: 0 };
 }
 
 // Advances the donut by dt seconds. Returns a 3×3 matrix for render().
@@ -131,6 +147,15 @@ export function stepPose(pose, dt, { speed, paused }) {
       ? Q.slerp(pose.smoothTilt, pose.tilt, 1 - Math.exp(-SENSOR_SMOOTHING * dt))
       : pose.tilt;
     moveToward(pose, Q.mul(pose.smoothTilt, TOP_DOWN), dt, TILT_MAX_SPEED * Math.max(0.25, speed));
+  } else if (pose.joystick) {
+    // Ease the turning rate toward the stick (capped), then turn by it.
+    const max = JOY_MAX_SPEED * Math.max(0.25, speed);
+    const k = 1 - Math.exp(-JOY_EASE * dt);
+    pose.spin.x += (pose.joystick.x * max - pose.spin.x) * k;
+    pose.spin.y += (pose.joystick.y * max - pose.spin.y) * k;
+    // Rotate in screen space: the visible face turns toward the stick.
+    const turn = Q.mul(Q.axisAngle(1, 0, 0, pose.spin.y * dt), Q.axisAngle(0, 1, 0, -pose.spin.x * dt));
+    pose.current = Q.normalize(Q.mul(turn, pose.current));
   } else {
     if (!paused) {
       pose.A += SPIN_A * speed * dt;
